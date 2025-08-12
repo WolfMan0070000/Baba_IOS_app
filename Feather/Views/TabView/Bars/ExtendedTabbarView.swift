@@ -14,6 +14,7 @@ struct ExtendedTabbarView: View {
 	@Environment(\.horizontalSizeClass) var horizontalSizeClass
 	@AppStorage("Feather.tabCustomization") var customization = TabViewCustomization()
 	@StateObject var viewModel = SourcesViewModel.shared
+	@AppStorage("Feather.appLanguage") private var _appLanguage: String = "en"
 	
 	@State private var _isAddingPresenting = false
 	
@@ -41,7 +42,7 @@ struct ExtendedTabbarView: View {
 				.hidden(horizontalSizeClass == .compact)
 			}
 			
-			TabSection("Sources") {
+			TabSection(String.localized("Sources")) {
 				Tab(.localized("All Repositories"), systemImage: "globe.desk") {
 					NavigationStack {
 						SourceAppsView(object: Array(_sources), viewModel: viewModel)
@@ -77,6 +78,7 @@ struct ExtendedTabbarView: View {
 			SourcesAddView()
 				.presentationDetents([.medium])
 		}
+		.id(_appLanguage)
 	}
 	
 	@ViewBuilder
