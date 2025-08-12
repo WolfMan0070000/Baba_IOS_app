@@ -31,48 +31,17 @@ struct AboutView: View {
 	private let _donatorsUrl = "https://raw.githubusercontent.com/khcrysalis/project-credits/refs/heads/main/sponsors/credits.json"
 	
 	// MARK: Body
-	var body: some View {
-<<<<<<< HEAD
-		NBList(.localized("About Baba App")) {
-            Section {
-                VStack {
-                    Image(uiImage: (UIImage(named: Bundle.main.iconFileName ?? ""))! )
-                        .appIconStyle(size: 72)
-                    
-                    Text("Baba App")
-                        .font(.largeTitle)
-                        .bold()
-                        .foregroundStyle(.accent)
-                    
-                    HStack(spacing: 4) {
-						Text(.localized("Version"))
-                        Text(Bundle.main.version)
-                    }
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                }
-            }
-            .frame(maxWidth: .infinity)
-            .listRowBackground(EmptyView())
-            
-            Section {
-                Text("Hello, test")
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding()
-            }
-        }
-=======
-		NBList(.localized("About")) {
+    var body: some View {
+        NBList(.localized("About Baba App")) {
 			if !isLoading {
 				Section {
 					VStack {
-						Image(uiImage: AppIconView.altImage(UIApplication.shared.alternateIconName))
+                        Image(uiImage: AppIconView.altImage(UIApplication.shared.alternateIconName))
 							.appIconStyle(size: 72)
-						
-						Text(Bundle.main.exec)
+                        Text("Baba App")
 							.font(.largeTitle)
 							.bold()
-							.foregroundStyle(Color.accentColor)
+                            .foregroundStyle(Color.accentColor)
 						
 						HStack(spacing: 4) {
 							Text(.localized("Version"))
@@ -108,7 +77,6 @@ struct AboutView: View {
 		.task {
 			await _fetchAllData()
 		}
->>>>>>> 1ee6940f8d94d8b3ad4ddf1658f995d4b77c7864
 	}
 	
 	private func _fetchAllData() async {
