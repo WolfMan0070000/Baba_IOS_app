@@ -4,6 +4,10 @@
    <FileRef
       location = "group:README.md">
    </FileRef>
+   <FileSystemSynchronizedGroup
+      location = "group:a"
+      name = "a">
+   </FileSystemSynchronizedGroup>
    <FileRef
       location = "group:LICENSE">
    </FileRef>

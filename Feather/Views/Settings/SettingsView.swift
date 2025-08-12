@@ -12,6 +12,15 @@ import NimbleViews
 struct SettingsView: View {
 	private let _donationsUrl = "https://github.com/sponsors/khcrysalis"
 	private let _githubUrl = "https://github.com/khcrysalis/Feather"
+	@AppStorage("Feather.appLanguage") private var _appLanguage: String = "en"
+	
+	private let _availableLanguages: [(code: String, name: String)] = [
+		("en", "English"),
+		("fa", "فارسی"),
+		("tr", "Türkçe"),
+		("id", "Bahasa Indonesia"),
+		("vi", "Tiếng Việt")
+	]
 	
 	// MARK: Body
     var body: some View {
@@ -22,12 +31,22 @@ struct SettingsView: View {
 				#endif
 				
 				_feedback()
+
+				Section {
+					Picker(.localized("App Language"), systemImage: "globe", selection: $_appLanguage) {
+						ForEach(_availableLanguages, id: \.code) { language in
+							Text(language.name).tag(language.code)
+						}
+					}
+					.pickerStyle(.navigationLink)
+				}
 				
 				Section {
 					NavigationLink(.localized("Appearance"), destination: AppearanceView())
 				}
 				
 				NBSection(.localized("Features")) {
+					NavigationLink(.localized("Account"), destination: LoginView())
 					NavigationLink(.localized("Certificates"), destination: CertificatesView())
 					NavigationLink(.localized("Signing Options"), destination: ConfigurationView())
 					NavigationLink(.localized("Archive & Compression"), destination: ArchiveView())
@@ -46,12 +65,6 @@ extension SettingsView {
 	private func _feedback() -> some View {
 		Section {
 			NavigationLink(.localized("About"), destination: AboutView())
-			Button(.localized("Submit Feedback"), systemImage: "safari") {
-				UIApplication.open("\(_githubUrl)/issues")
-			}
-			Button(.localized("GitHub Repository"), systemImage: "safari") {
-				UIApplication.open(_githubUrl)
-			}
 		}
 	}
 	

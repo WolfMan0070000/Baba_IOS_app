@@ -17,6 +17,7 @@ struct FeatherApp: App {
 	
 	@StateObject var downloadManager = DownloadManager.shared
 	let storage = Storage.shared
+	@AppStorage("Feather.appLanguage") private var appLanguage: String = "en"
 
 	var body: some Scene {
 		WindowGroup {
@@ -25,8 +26,10 @@ struct FeatherApp: App {
 					.transition(.move(edge: .top).combined(with: .opacity))
 				VariedTabbarView()
 					.environment(\.managedObjectContext, storage.context)
+					.environment(\.locale, .init(identifier: appLanguage))
 					.onOpenURL(perform: _handleURL)
 					.transition(.move(edge: .top).combined(with: .opacity))
+					.tint(AppTheme.primary)
 			}
 			.animation(.smooth, value: downloadManager.manualDownloads.description)
 			.onReceive(NotificationCenter.default.publisher(for: .heartbeatInvalidHost)) { _ in
@@ -75,6 +78,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 		_createPipeline()
 		_createSourcesDirectory()
 		_clean()
+		Storage.shared.addDefaultSources()
 		return true
 	}
 	

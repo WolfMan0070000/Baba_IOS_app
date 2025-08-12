@@ -53,6 +53,24 @@
             }
           }
         },
+        "fa" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld برنامه"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld برنامه"
+                }
+              }
+            }
+          }
+        },
         "id" : {
           "variations" : {
             "plural" : {
@@ -142,6 +160,24 @@
             }
           }
         },
+        "fa" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld روز"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld روز"
+                }
+              }
+            }
+          }
+        },
         "id" : {
           "variations" : {
             "plural" : {
@@ -193,6 +229,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld required system dylibs not shown"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld کتابخانه سیستمی مورد نیاز نمایش داده نشد"
           }
         },
         "id" : {
@@ -261,6 +303,24 @@
             "value" : "%lld Sources"
           }
         },
+        "fa" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld منبع"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld منبع"
+                }
+              }
+            }
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -282,6 +342,7 @@
       }
     },
     "💜 This couldn't of been done without my sponsors!" : {
+      "extractionState" : "stale",
       "localizations" : {
         "cs" : {
           "stringUnit" : {
@@ -292,7 +353,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "💜 This couldn't of been done without my sponsors!"
+            "value" : "💜 This couldn't have been done without my sponsors!"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "💜 این کار بدون حامیان مالی من ممکن نبود!"
           }
         },
         "id" : {
@@ -329,6 +396,12 @@
             "value" : "About"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "درباره"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -345,6 +418,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Giới thiệu"
+          }
+        }
+      }
+    },
+    "About Baba App " : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "About Baba App "
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "درباره برنامه بابا"
           }
         }
       }
@@ -374,6 +464,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Add"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افزودن"
           }
         },
         "id" : {
@@ -422,6 +518,12 @@
             "value" : "Add Source"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افزودن منبع"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -455,6 +557,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Adhoc Signing"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "امضای Adhoc"
           }
         },
         "id" : {
@@ -504,6 +612,12 @@
             "value" : "Avanzado"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "پیشرفته"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
@@ -545,6 +659,12 @@
             "value" : "All"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "همه"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -565,7 +685,8 @@
         }
       }
     },
-    "All of Feathers files are contained in the documents directory, here are some quick links to these." : {
+    "All of Baba App files are contained in the documents directory, here are some quick links to these." : {
+      "extractionState" : "stale",
       "localizations" : {
         "cs" : {
           "stringUnit" : {
@@ -576,7 +697,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "All of Feathers files are contained in the documents directory, here are some quick links to these."
+            "value" : "All of Baba App files are contained in the documents directory, here are some quick links to these."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تمام فایل‌های Baba App در پوشه اسناد قرار دارند، در اینجا چند لینک سریع به آن‌ها وجود دارد."
           }
         },
         "id" : {
@@ -588,13 +715,13 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Feather’ın tüm dosyaları “Belgeler” klasöründe yer almaktadır. Yukarıda yer alan bağlantılar ile bunlardan bazılarına erişebilirsiniz."
+            "value" : "Feather'ın tüm dosyaları \"Belgeler\" klasöründe yer almaktadır. Yukarıda yer alan bağlantılar ile bunlardan bazılarına erişebilirsiniz."
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tất cả các tệp của Feathers được chứa trong thư mục tài liệu, đây là một số liên kết nhanh đến chúng."
+            "value" : "Tất cả các tệp của Baba App được chứa trong thư mục tài liệu, đây là một số liên kết nhanh đến chúng."
           }
         }
       }
@@ -612,6 +739,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "All Repositories"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "همه مخزن‌ها"
           }
         },
         "id" : {
@@ -646,6 +779,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Alternative Icons"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "آیکون‌های جایگزین"
           }
         },
         "id" : {
@@ -690,6 +829,12 @@
             "value" : "An awesome application"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "یک برنامه فوق‌العاده"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -725,6 +870,12 @@
             "value" : "App Features"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ویژگی‌های برنامه"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -741,6 +892,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tính năng"
+          }
+        }
+      }
+    },
+    "App Language" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App Language"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "زبان برنامه"
           }
         }
       }
@@ -769,6 +936,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Apariencia"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ظاهر"
           }
         },
         "fr" : {
@@ -818,6 +991,12 @@
             "value" : "AppID Name"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نام AppID"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -852,6 +1031,12 @@
             "value" : "Archive & Compression"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "آرشیو و فشرده‌سازی"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -871,6 +1056,9 @@
           }
         }
       }
+    },
+    "Baba App" : {
+
     },
     "Bad Password" : {
       "comment" : "Bad certificate password",
@@ -897,6 +1085,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Contraseña Inválida"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "رمز عبور اشتباه"
           }
         },
         "fr" : {
@@ -939,6 +1133,12 @@
             "state" : "translated",
             "value" : "Best"
           }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بهترین"
+          }
         }
       }
     },
@@ -967,6 +1167,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Descripción Grande"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "توضیحات کامل"
           }
         },
         "fr" : {
@@ -1016,6 +1222,12 @@
             "value" : "Bundle"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بسته"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1060,6 +1272,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cancelar"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لغو"
           }
         },
         "fr" : {
@@ -1109,6 +1327,12 @@
             "value" : "Certificate"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "گواهینامه"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1154,6 +1378,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Certificados"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "گواهینامه‌ها"
           }
         },
         "fr" : {
@@ -1202,6 +1432,12 @@
             "value" : "Change"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تغییر"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1237,6 +1473,12 @@
             "value" : "Choose from Files"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "انتخاب از فایل‌ها"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1246,7 +1488,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dosyalar’dan Seç"
+            "value" : "Dosyalar'dan Seç"
           }
         },
         "vi" : {
@@ -1272,6 +1514,12 @@
             "value" : "Choose from Photos"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "انتخاب از عکس‌ها"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1281,7 +1529,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fotoğraflar’dan Seç"
+            "value" : "Fotoğraflar'dan Seç"
           }
         },
         "vi" : {
@@ -1305,6 +1553,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Close"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بستن"
           }
         },
         "id" : {
@@ -1335,6 +1589,12 @@
             "state" : "translated",
             "value" : "Completed"
           }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تکمیل شد"
+          }
         }
       }
     },
@@ -1351,6 +1611,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Compression Level"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سطح فشرده‌سازی"
           }
         },
         "id" : {
@@ -1397,6 +1663,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Copiar"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "کپی"
           }
         },
         "fr" : {
@@ -1458,6 +1730,12 @@
             "value" : "Créditos"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "دست‌اندرکاران"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1511,6 +1789,12 @@
             "value" : "Customization"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "شخصی‌سازی"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1550,6 +1834,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Date"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تاریخ"
           }
         },
         "id" : {
@@ -1597,6 +1887,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fecha agregado"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تاریخ افزودن"
           }
         },
         "fr" : {
@@ -1650,6 +1946,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Por defecto"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "پیش‌فرض"
           }
         },
         "fr" : {
@@ -1710,6 +2012,12 @@
             "value" : "Borrar"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حذف"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1751,6 +2059,12 @@
             "value" : "Discord"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Discord"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1785,6 +2099,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Descartar"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "رد کردن"
           }
         },
         "fr" : {
@@ -1839,6 +2159,12 @@
             "value" : "Display Names"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نام‌های نمایشی"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1890,6 +2216,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Donar"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حمایت مالی"
           }
         },
         "fr" : {
@@ -1951,6 +2283,12 @@
             "value" : "Donaciones"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حمایت‌های مالی"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1993,6 +2331,12 @@
             "value" : "Download StosVPN"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "دانلود StosVPN"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2013,6 +2357,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dylibs"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "کتابخانه‌های پویا"
           }
         },
         "fr" : {
@@ -2061,6 +2411,12 @@
             "value" : "Enabling any protection will append a random string to the bundleidentifiers of the apps you sign, this is to ensure your Apple ID does not get flagged by Apple. However, when using a signing service you can ignore this."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فعال کردن هرگونه محافظت، یک رشته تصادفی به شناسه‌های بسته برنامه‌هایی که امضا می‌کنید اضافه می‌کند تا اطمینان حاصل شود که Apple ID شما توسط اپل علامت‌گذاری نمی‌شود. با این حال، هنگام استفاده از یک سرویس امضا، می‌توانید این مورد را نادیده بگیرید."
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2093,6 +2449,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Enter a URL to start validation."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "برای شروع اعتبارسنجی، یک URL وارد کنید."
           }
         },
         "id" : {
@@ -2139,6 +2501,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Introducir Contraseña"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ورود رمز عبور"
           }
         },
         "fr" : {
@@ -2199,6 +2567,12 @@
             "value" : "Introduzca la contraseña asociada a la llave privada, déjalo en blanco si una contraseña no es necesaria."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "رمز عبور مرتبط با کلید خصوصی را وارد کنید. اگر رمز عبوری لازم نیست، آن را خالی بگذارید."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2245,6 +2619,12 @@
             "value" : "Entitlements"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مجوزها"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2273,6 +2653,12 @@
             "state" : "translated",
             "value" : "Error"
           }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "خطا"
+          }
         }
       }
     },
@@ -2289,6 +2675,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Executable"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فایل اجرایی"
           }
         },
         "id" : {
@@ -2323,6 +2715,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Existing Dylibs"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "کتابخانه‌های پویای موجود"
           }
         },
         "id" : {
@@ -2372,6 +2770,12 @@
             "value" : "Expirado"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "منقضی شده"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2411,6 +2815,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Expires"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تاریخ انقضا"
           }
         },
         "id" : {
@@ -2454,6 +2864,12 @@
             "value" : "Export"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "خروجی گرفتن"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2487,6 +2903,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Failed to download, check your internet connection and try again."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "دانلود ناموفق بود، اتصال اینترنت خود را بررسی کرده و دوباره تلاش کنید."
           }
         },
         "id" : {
@@ -2524,6 +2946,12 @@
             "value" : "Features"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ویژگی‌ها"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2558,6 +2986,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "File Sharing"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اشتراک‌گذاری فایل"
           }
         },
         "id" : {
@@ -2601,6 +3035,12 @@
             "value" : "Files"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فایل‌ها"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2639,6 +3079,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Filter by"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فیلتر بر اساس"
           }
         },
         "id" : {
@@ -2682,6 +3128,12 @@
             "value" : "Force Localize"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اجبار به محلی‌سازی"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2717,6 +3169,12 @@
             "value" : "Frameworks"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فریم‌ورک‌ها"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2726,7 +3184,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Framework’ler"
+            "value" : "Framework'ler"
           }
         },
         "vi" : {
@@ -2751,6 +3209,12 @@
             "value" : "Frameworks & PlugIns"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فریم‌ورک‌ها و پلاگین‌ها"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2760,7 +3224,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Framework’ler ve Eklentiler"
+            "value" : "Framework'ler ve Eklentiler"
           }
         },
         "vi" : {
@@ -2784,6 +3248,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fully Local"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "کاملاً محلی"
           }
         },
         "id" : {
@@ -2825,6 +3295,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "General"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عمومی"
           }
         },
         "fr" : {
@@ -2874,6 +3350,12 @@
             "value" : "Get access to our secret Discord by donating, where we talk about future updates, betas, and potential ways to make your experience better."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "با حمایت مالی، به دیسکورد مخفی ما دسترسی پیدا کنید، جایی که درباره به‌روزرسانی‌های آینده، نسخه‌های بتا و راه‌های بالقوه برای بهتر کردن تجربه شما صحبت می‌کنیم."
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2909,6 +3391,12 @@
             "value" : "Get Info"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "دریافت اطلاعات"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2930,6 +3418,7 @@
       }
     },
     "GitHub Repository" : {
+      "extractionState" : "stale",
       "localizations" : {
         "cs" : {
           "stringUnit" : {
@@ -2953,6 +3442,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Repositorio de GitHub"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مخزن گیت‌هاب"
           }
         },
         "fr" : {
@@ -3002,6 +3497,12 @@
             "value" : "Heartbeat"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تپش قلب"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3022,6 +3523,9 @@
         }
       }
     },
+    "Hello, test" : {
+
+    },
     "Help" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3035,6 +3539,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Help"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "راهنما"
           }
         },
         "id" : {
@@ -3072,6 +3582,12 @@
             "value" : "Hidden"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مخفی"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3103,7 +3619,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Identifers"
+            "value" : "Identifiers"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "شناسه‌ها"
           }
         },
         "id" : {
@@ -3150,6 +3672,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Identificador"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "شناسه"
           }
         },
         "fr" : {
@@ -3199,6 +3727,12 @@
             "value" : "Identifier Prefix"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "پیشوند شناسه"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3223,6 +3757,12 @@
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "idevice"
+          }
+        },
+        "fa" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "idevice"
@@ -3256,6 +3796,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Import"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وارد کردن"
           }
         },
         "fr" : {
@@ -3305,6 +3851,12 @@
             "value" : "Import Certificate File"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وارد کردن فایل گواهینامه"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3346,6 +3898,12 @@
             "value" : "Import from Files"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وارد کردن از فایل‌ها"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3355,7 +3913,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dosyalar’dan İçe Aktar"
+            "value" : "Dosyalar'dan İçe Aktar"
           }
         },
         "vi" : {
@@ -3381,6 +3939,12 @@
             "value" : "Import from URL"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وارد کردن از URL"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3390,7 +3954,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "URL’den İçe Aktar"
+            "value" : "URL'den İçe Aktar"
           }
         },
         "vi" : {
@@ -3414,6 +3978,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Import Pairing File"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وارد کردن فایل جفت‌سازی"
           }
         },
         "id" : {
@@ -3451,6 +4021,12 @@
             "value" : "Import Provisioning File"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وارد کردن فایل Provisioning"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3484,6 +4060,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Imported"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وارد شده"
           }
         },
         "id" : {
@@ -3521,6 +4103,12 @@
             "value" : "Info"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اطلاعات"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3550,6 +4138,12 @@
             "value" : "Injection Folder"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "پوشه تزریق"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3565,6 +4159,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Injection Path"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مسیر تزریق"
           }
         },
         "id" : {
@@ -3599,6 +4199,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Install"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نصب"
           }
         },
         "fr" : {
@@ -3641,6 +4247,12 @@
             "state" : "translated",
             "value" : "Installation"
           }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نصب"
+          }
         }
       }
     },
@@ -3656,6 +4268,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Installation Type"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نوع نصب"
           }
         },
         "id" : {
@@ -3686,6 +4304,12 @@
             "state" : "translated",
             "value" : "Installing"
           }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "در حال نصب"
+          }
         }
       }
     },
@@ -3704,6 +4328,12 @@
             "value" : "iPad Fullscreen"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تمام صفحه در آیپد"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3713,7 +4343,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "iPad’de Tam Ekran"
+            "value" : "iPad'de Tam Ekran"
           }
         },
         "vi" : {
@@ -3746,6 +4376,12 @@
             "value" : "iTunes File Sharing"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اشتراک‌گذاری فایل iTunes"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3768,6 +4404,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chia sẻ tệp qua iTunes"
+          }
+        }
+      }
+    },
+    "Language" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Language"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "زبان"
           }
         }
       }
@@ -3798,6 +4451,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Biblioteca"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "کتابخانه"
           }
         },
         "fr" : {
@@ -3838,6 +4497,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Library Cell Appearance"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ظاهر سلول کتابخانه"
           }
         },
         "id" : {
@@ -3882,6 +4547,12 @@
             "value" : "Minimum Requirement"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حداقل سیستم مورد نیاز"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3917,6 +4588,12 @@
             "value" : "Misc"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "متفرقه"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3949,6 +4626,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Modify"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اصلاح"
           }
         },
         "id" : {
@@ -3997,6 +4680,12 @@
             "value" : "Nombre"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نام"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4036,6 +4725,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "New"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جدید"
           }
         },
         "id" : {
@@ -4085,6 +4780,12 @@
             "value" : "Añadir Certificados"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "گواهینامه جدید"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4132,6 +4833,12 @@
             "value" : "Nickname (Optional)"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نام مستعار (اختیاری)"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4167,6 +4874,12 @@
             "value" : "No Certificate"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بدون گواهینامه"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4196,6 +4909,12 @@
             "value" : "No files chosen."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هیچ فایلی انتخاب نشده است."
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4217,6 +4936,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No pairing file found, please import it."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فایل جفت‌سازی یافت نشد، لطفاً آن را وارد کنید."
           }
         },
         "id" : {
@@ -4247,6 +4972,12 @@
             "state" : "translated",
             "value" : "None"
           }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هیچکدام"
+          }
         }
       }
     },
@@ -4274,6 +5005,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "OK"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "باشه"
           }
         },
         "fr" : {
@@ -4322,6 +5059,12 @@
             "value" : "Only use localhost address"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فقط از آدرس لوکال‌هاست استفاده شود"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4331,7 +5074,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Yalnızca “localhost” adresini kullan"
+            "value" : "Yalnızca \"localhost\" adresini kullan"
           }
         },
         "vi" : {
@@ -4354,6 +5097,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Open"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "باز کردن"
           }
         },
         "id" : {
@@ -4390,6 +5139,12 @@
             "value" : "Open Archives"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "باز کردن آرشیوها"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4424,6 +5179,12 @@
             "value" : "Open Certificates"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "باز کردن گواهینامه‌ها"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4456,6 +5217,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Open Documents"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "باز کردن اسناد"
           }
         },
         "id" : {
@@ -4504,6 +5271,12 @@
             "value" : "Abrir en Archivos"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "باز کردن در فایل‌ها"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4525,7 +5298,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dosyalar’da Aç"
+            "value" : "Dosyalar'da Aç"
           }
         },
         "vi" : {
@@ -4544,6 +5317,12 @@
             "state" : "translated",
             "value" : "Packaging"
           }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بسته‌بندی"
+          }
         }
       }
     },
@@ -4560,6 +5339,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Pairing File Guide"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "راهنمای فایل جفت‌سازی"
           }
         },
         "id" : {
@@ -4609,6 +5394,12 @@
             "value" : "Contraseña"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "رمز عبور"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4656,6 +5447,12 @@
             "value" : "Pill"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "کپسول"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4689,6 +5486,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Platform"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "پلتفرم"
           }
         },
         "id" : {
@@ -4738,6 +5541,12 @@
             "value" : "Por favor revise la contraseña e inténtelo de nuevo."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لطفاً رمز عبور را بررسی کرده و دوباره تلاش کنید."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4785,6 +5594,12 @@
             "value" : "Please go to settings and import a valid certificate"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لطفاً به تنظیمات بروید و یک گواهینامه معتبر وارد کنید."
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4818,6 +5633,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "PPQ Protection"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "محافظت PPQ"
           }
         },
         "id" : {
@@ -4862,6 +5683,12 @@
             "value" : "Previous Versions"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نسخه‌های قبلی"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4901,6 +5728,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Properties"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ویژگی‌ها"
           }
         },
         "fr" : {
@@ -4944,6 +5777,12 @@
             "value" : "Protection"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "محافظت"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4977,6 +5816,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Provision All Devices"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Provision برای همه دستگاه‌ها"
           }
         },
         "id" : {
@@ -5014,6 +5859,12 @@
             "value" : "Provisioned Devices"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "دستگاه‌های Provision شده"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5048,6 +5899,12 @@
             "value" : "Re-sign"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "امضای مجدد"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5076,6 +5933,12 @@
             "state" : "translated",
             "value" : "Ready"
           }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "آماده"
+          }
         }
       }
     },
@@ -5092,6 +5955,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Removal"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حذف"
           }
         },
         "id" : {
@@ -5127,6 +5996,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Remove annoying alerts like these after getting beta access!"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "با دریافت دسترسی بتا، هشدارهای مزاحمی مانند این را حذف کنید!"
           }
         },
         "id" : {
@@ -5170,6 +6045,12 @@
             "value" : "Remove Provisioning"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حذف Provisioning"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5211,6 +6092,12 @@
             "value" : "Remove Supported Devices"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حذف دستگاه‌های پشتیبانی شده"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5244,6 +6131,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Remove this Alert"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حذف این هشدار"
           }
         },
         "id" : {
@@ -5285,6 +6178,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Remove URL Scheme"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حذف طرح URL"
           }
         },
         "id" : {
@@ -5334,6 +6233,12 @@
             "value" : "Remove Watch Placeholder"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حذف مکان‌ نگهدار واچ"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5372,6 +6277,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Replacement"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جایگزینی"
           }
         },
         "id" : {
@@ -5421,6 +6332,12 @@
             "value" : "Repositories"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مخزن‌ها"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5466,6 +6383,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Reiniciar"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بازنشانی"
           }
         },
         "fr" : {
@@ -5515,6 +6438,12 @@
             "value" : "Restart Heartbeat"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "راه‌اندازی مجدد تپش قلب"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5524,7 +6453,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Heartbeat’ı Sıfırla"
+            "value" : "Heartbeat'ı Sıfırla"
           }
         },
         "vi" : {
@@ -5548,6 +6477,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Restart Required"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نیاز به راه‌اندازی مجدد"
           }
         },
         "id" : {
@@ -5596,6 +6531,12 @@
             "value" : "Guardar"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ذخیره"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5638,6 +6579,12 @@
             "value" : "See all apps from your sources"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مشاهده همه برنامه‌ها از منابع شما"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5671,6 +6618,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Seems like you've gotten your hands on your pairing file!"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "به نظر می‌رسد فایل جفت‌سازی خود را دریافت کرده‌اید!"
           }
         },
         "id" : {
@@ -5708,6 +6661,12 @@
             "value" : "Select Alternative Icon"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "انتخاب آیکون جایگزین"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5741,6 +6700,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Select entitlements file"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "انتخاب فایل مجوزها"
           }
         },
         "id" : {
@@ -5778,6 +6743,12 @@
             "value" : "Semi Local"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نیمه محلی"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5806,6 +6777,12 @@
             "state" : "translated",
             "value" : "Sending Manifest"
           }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "در حال ارسال مانیفست"
+          }
         }
       }
     },
@@ -5816,6 +6793,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sending Payload"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "در حال ارسال محتوا"
           }
         }
       }
@@ -5828,6 +6811,12 @@
             "state" : "translated",
             "value" : "Server"
           }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سرور"
+          }
         }
       }
     },
@@ -5837,7 +6826,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Server (Recommended):\\nUses a locally hosted server and itms-services:// to install applications.\\n\\nIDevice (advanced):\\nUses a VPN and a pairing file. Writes to AFC and manually calls installd, while monitoring install progress by using a callback\\nAdvantage: It is very reliable, does not need SSL certificates or a externally hosted server. Rather, works similarly to a computer."
+            "value" : "Server (Recommended):\nUses a locally hosted server and itms-services:// to install applications.\n\nIDevice (advanced):\nUses a VPN and a pairing file. Writes to AFC and manually calls installd, while monitoring install progress by using a callback\nAdvantage: It is very reliable, does not need SSL certificates or a externally hosted server. Rather, works similarly to a computer."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سرور (توصیه شده):\nاز یک سرور محلی و itms-services:// برای نصب برنامه‌ها استفاده می‌کند.\n\nIDevice (پیشرفته):\nاز یک VPN و یک فایل جفت‌سازی استفاده می‌کند. در AFC می‌نویسد و به صورت دستی installd را فراخوانی می‌کند، در حالی که پیشرفت نصب را با استفاده از یک callback نظارت می‌کند.\nمزیت: بسیار قابل اعتماد است، به گواهینamه‌های SSL یا سرور خارجی نیاز ندارد. بلکه، شبیه به یک کامپیوتر کار می‌کند."
           }
         }
       }
@@ -5854,6 +6849,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Server & SSL"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سرور و SSL"
           }
         },
         "id" : {
@@ -5884,6 +6885,12 @@
             "state" : "translated",
             "value" : "Server Type"
           }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نوع سرور"
+          }
         }
       }
     },
@@ -5913,6 +6920,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ajustes"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تنظیمات"
           }
         },
         "fr" : {
@@ -5956,6 +6969,12 @@
             "value" : "Show Sheet when Exporting"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نمایش صفحه هنگام خروجی گرفتن"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5989,6 +7008,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Show Your Support"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حمایت خود را نشان دهید"
           }
         },
         "id" : {
@@ -6026,6 +7051,12 @@
             "value" : "Show your support by donating! If you're unable to donate, spreading the word works too!"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "با حمایت مالی، حمایت خود را نشان دهید! اگر قادر به حمایت مالی نیستید، به اشتراک گذاشتن برنامه نیز کمک بزرگی است!"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -6061,6 +7092,12 @@
             "value" : "Sign"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "امضا"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -6094,6 +7131,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Signed"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "امضا شده"
           }
         },
         "id" : {
@@ -6135,6 +7178,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Signing"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "امضا کردن"
           }
         },
         "fr" : {
@@ -6183,6 +7232,12 @@
             "value" : "Signing Options"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "گزینه‌های امضا"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -6221,6 +7276,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Source Repo URL"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "URL مخزن منبع"
           }
         },
         "id" : {
@@ -6270,6 +7331,12 @@
             "value" : "Fuentes"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "منابع"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
@@ -6304,6 +7371,12 @@
             "state" : "translated",
             "value" : "Speed"
           }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سرعت"
+          }
         }
       }
     },
@@ -6332,6 +7405,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sponsors"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حامیان مالی"
           }
         },
         "fr" : {
@@ -6381,6 +7460,12 @@
             "value" : "SSL Certificates"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "گواهینامه‌های SSL"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -6420,6 +7505,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Standard"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "استاندارد"
           }
         },
         "id" : {
@@ -6469,6 +7560,12 @@
             "value" : "Empezar a Firmar"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "شروع امضا"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -6501,6 +7598,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Store Cell Appearance"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ظاهر سلول فروشگاه"
           }
         },
         "id" : {
@@ -6537,6 +7640,12 @@
             "value" : "String"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "رشته"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -6558,6 +7667,7 @@
       }
     },
     "Submit Feedback" : {
+      "extractionState" : "stale",
       "localizations" : {
         "cs" : {
           "stringUnit" : {
@@ -6581,6 +7691,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Envíar tu opinión"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ارسال بازخورد"
           }
         },
         "fr" : {
@@ -6629,6 +7745,12 @@
             "value" : "Supports importing from KravaSign/MapleSign and ESign"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "پشتیبانی از وارد کردن از KravaSign/MapleSign و ESign"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -6638,7 +7760,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "KravaSign/MapleSign ve ESign’den içe aktarmayı destekler"
+            "value" : "KravaSign/MapleSign ve ESign'den içe aktarmayı destekler"
           }
         },
         "vi" : {
@@ -6662,6 +7784,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Team Identifiers"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "شناسه‌های تیم"
           }
         },
         "id" : {
@@ -6699,6 +7827,12 @@
             "value" : "Team Name"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نام تیم"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -6734,6 +7868,12 @@
             "value" : "The heartbeat is activated in the background, it will restart when the app is re-opened or prompted. If the status below is pulsing, that means its healthy."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تپش قلب در پس‌زمینه فعال می‌شود و هنگام بازگشایی مجدد برنامه یا درخواست، دوباره راه‌اندازی می‌شود. اگر وضعیت زیر در حال تپیدن باشد، به معنای سالم بودن آن است."
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -6743,7 +7883,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Heartbeat arka planda etkinleştirilir ve uygulama yeniden açıldığında ya da istenildiğinde yeniden başlatılır. Eğer aşağıdaki durum kalp atışı şeklide ise bu Heartbeat’in işlevsel olduğu anlamına gelir."
+            "value" : "Heartbeat arka planda etkinleştirilir ve uygulama yeniden açıldığında ya da istenildiğinde yeniden başlatılır. Eğer aşağıdaki durum kalp atışı şeklide ise bu Heartbeat'in işlevsel olduğu anlamına gelir."
           }
         },
         "vi" : {
@@ -6767,6 +7907,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "These changes require a restart of the app"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "این تغییرات نیازمند راه‌اندازی مجدد برنامه است"
           }
         },
         "id" : {
@@ -6801,6 +7947,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Toggling show sheet will present a share sheet after exporting to your files."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فعال کردن این گزینه، یک صفحه اشتراک‌گذاری را پس از خروجی گرفتن به فایل‌های شما نمایش می‌دهد."
           }
         },
         "id" : {
@@ -6838,6 +7990,12 @@
             "value" : "Tunnel & Pairing"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تونل و جفت‌سازی"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -6871,6 +8029,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tweaks"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "توییک‌ها"
           }
         },
         "fr" : {
@@ -6913,6 +8077,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Desconocido"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ناشناخته"
           }
         },
         "fr" : {
@@ -6967,6 +8137,12 @@
             "value" : "Update SSL Certificates"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "به‌روزرسانی گواهینامه‌های SSL"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -6995,6 +8171,12 @@
             "value" : "URL"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "URL"
+          }
+        },
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
@@ -7011,6 +8193,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Value"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مقدار"
           }
         }
       }
@@ -7039,6 +8227,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Versión"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نسخه"
           }
         },
         "fr" : {
@@ -7082,6 +8276,12 @@
             "value" : "View Entitlements"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مشاهده مجوزها"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -7117,6 +8317,12 @@
             "value" : "Visit Patreon"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بازدید از Patreon"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -7126,7 +8332,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Patreon’u Ziyaret Et"
+            "value" : "Patreon'u Ziyaret Et"
           }
         },
         "vi" : {
@@ -7152,6 +8358,12 @@
             "value" : "Visit Website"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بازدید از وب‌سایت"
+          }
+        },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
@@ -7172,19 +8384,25 @@
         }
       }
     },
-    "You cannot update ‘%@‘ with itself, please use an alternative tool to update it." : {
+    "You cannot update '%@' with itself, please use an alternative tool to update it." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You cannot update ‘%@‘ with itself, please use an alternative tool to update it."
+            "value" : "You cannot update '%@' with itself, please use an alternative tool to update it."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "شما نمی‌توانید '%@' را با خودش به‌روزرسانی کنید، لطفاً از یک ابزار جایگزین برای به‌روزرسانی آن استفاده کنید."
           }
         },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kamu tidak bisa melakukan update pada ‘%@’ menggunakan dirinya sendiri. Silakan gunakan tool alternatif untuk memperbaruinya."
+            "value" : "Kamu tidak bisa melakukan update pada '%@' menggunakan dirinya sendiri. Silakan gunakan tool alternatif untuk memperbaruinya."
           }
         }
       }
@@ -7196,6 +8414,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Your pairing file is invalid and is incompatible with your device, please import a valid pairing file."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فایل جفت‌سازی شما نامعتبر است و با دستگاه شما سازگار نیست، لطفاً یک فایل جفت‌سازی معتبر وارد کنید."
           }
         }
       }

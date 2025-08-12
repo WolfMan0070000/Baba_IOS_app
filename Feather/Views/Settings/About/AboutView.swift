@@ -23,13 +23,13 @@ struct AboutView: View {
 	
 	// MARK: Body
 	var body: some View {
-		NBList(.localized("About")) {
+		NBList(.localized("About Baba App")) {
             Section {
                 VStack {
                     Image(uiImage: (UIImage(named: Bundle.main.iconFileName ?? ""))! )
                         .appIconStyle(size: 72)
                     
-                    Text(Bundle.main.exec)
+                    Text("Baba App")
                         .font(.largeTitle)
                         .bold()
                         .foregroundStyle(.accent)
@@ -44,29 +44,13 @@ struct AboutView: View {
             }
             .frame(maxWidth: .infinity)
             .listRowBackground(EmptyView())
-			
-			NBSection(.localized("Credits")) {
-				ForEach(_credits, id: \.github) { credit in
-					_credit(name: credit.name, desc: credit.desc, github: credit.github)
-				}
-				.transition(.slide)
-			}
-			
-			NBSection(.localized("Sponsors")) {
-				Text(try! AttributedString(markdown: _donators.map {
-					"[\($0.name ?? $0.github)](https://github.com/\($0.github))"
-				}.joined(separator: ", ")))
-				.transition(.slide)
-				
-				Text(.localized("💜 This couldn't of been done without my sponsors!"))
-					.foregroundStyle(.secondary)
-					.padding(.vertical, 2)
-			}
-		}
-		.animation(.default, value: isLoading)
-		.task {
-			await _fetchAllData()
-		}
+            
+            Section {
+                Text("Hello, test")
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding()
+            }
+        }
 	}
 	
 	private func _fetchAllData() async {
