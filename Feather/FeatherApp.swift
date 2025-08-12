@@ -16,13 +16,8 @@ struct FeatherApp: App {
 	let heartbeat = HeartbeatManager.shared
 	
 	@StateObject var downloadManager = DownloadManager.shared
-	let storage = Storage.shared
-<<<<<<< HEAD
-	@AppStorage("Feather.appLanguage") private var appLanguage: String = "en"
-
-=======
-	
->>>>>>> 1ee6940f8d94d8b3ad4ddf1658f995d4b77c7864
+    let storage = Storage.shared
+    @AppStorage("Feather.appLanguage") private var appLanguage: String = "fa"
 	var body: some Scene {
 		WindowGroup {
 			VStack {
@@ -155,15 +150,9 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 		_ application: UIApplication,
 		didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
 	) -> Bool {
-		_createPipeline()
-<<<<<<< HEAD
-		_createSourcesDirectory()
-		_clean()
-		Storage.shared.addDefaultSources()
-=======
-		_createDocumentsDirectories()
-		ResetView.clearWorkCache()
->>>>>>> 1ee6940f8d94d8b3ad4ddf1658f995d4b77c7864
+        _createPipeline()
+        _createDocumentsDirectories()
+        ResetView.clearWorkCache()
 		return true
 	}
 	

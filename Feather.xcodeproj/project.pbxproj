@@ -220,21 +220,16 @@
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
-				en,
-				Base,
-				de,
-				fr,
-				ru,
-				es,
-				vi,
-				tr,
-				id,
-<<<<<<< HEAD
-				fa,
-=======
-				pl,
-				it,
->>>>>>> 1ee6940f8d94d8b3ad4ddf1658f995d4b77c7864
+                en,
+                Base,
+                de,
+                fr,
+                ru,
+                es,
+                vi,
+                tr,
+                id,
+                fa,
 			);
 			mainGroup = 3379C1B02DA869A1004372DA;
 			minimizedProjectReferenceProxies = 1;
@@ -491,13 +486,8 @@
 					"$(PROJECT_DIR)/Feather/Resources/idevice",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.2;
-<<<<<<< HEAD
-				MARKETING_VERSION = 2.0.1;
-				PRODUCT_BUNDLE_IDENTIFIER = Bbaba.bama.ksdw;
-=======
-				MARKETING_VERSION = 2.3.1;
-				PRODUCT_BUNDLE_IDENTIFIER = thewonderofyou.Feather;
->>>>>>> 1ee6940f8d94d8b3ad4ddf1658f995d4b77c7864
+                MARKETING_VERSION = 2.0.1;
+                PRODUCT_BUNDLE_IDENTIFIER = Bbaba.bama.ksdw;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = auto;
@@ -560,13 +550,8 @@
 					"$(PROJECT_DIR)/Feather/Resources/idevice",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.2;
-<<<<<<< HEAD
-				MARKETING_VERSION = 2.0.1;
-				PRODUCT_BUNDLE_IDENTIFIER = BabaApp.Babaman.baba;
-=======
-				MARKETING_VERSION = 2.3.1;
-				PRODUCT_BUNDLE_IDENTIFIER = thewonderofyou.Feather;
->>>>>>> 1ee6940f8d94d8b3ad4ddf1658f995d4b77c7864
+                MARKETING_VERSION = 2.0.1;
+                PRODUCT_BUNDLE_IDENTIFIER = BabaApp.Babaman.baba;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = auto;
