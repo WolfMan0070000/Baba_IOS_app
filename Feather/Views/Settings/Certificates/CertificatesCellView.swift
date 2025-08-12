@@ -17,9 +17,18 @@ struct CertificatesCellView: View {
 	// MARK: Body
 	var body: some View {
 		VStack(spacing: 6) {
+			let title = {
+				var title = cert.nickname ?? data?.Name ?? .localized("Unknown")
+				
+				if let getTaskAllow = data?.Entitlements?["get-task-allow"]?.value as? Bool, getTaskAllow == true {
+					title = "🐞 \(title)"
+				}
+				
+				return title
+			}()
 			
 			NBTitleWithSubtitleView(
-				title: cert.nickname ?? data?.Name ?? .localized("Unknown"),
+				title: title,
 				subtitle: data?.AppIDName ?? .localized("Unknown")
 			)
 			
@@ -31,7 +40,6 @@ struct CertificatesCellView: View {
 		.onAppear {
 			withAnimation {
 				data = Storage.shared.getProvisionFileDecoded(for: cert)
-				Storage.shared.revokagedCertificate(for: cert)
 			}
 		}
 	}
@@ -60,11 +68,11 @@ extension CertificatesCellView {
 		var pills: [NBPillItem] = []
 		
 		if cert.ppQCheck == true {
-			pills.append(NBPillItem(title: "PPQCheck", icon: "checkmark.shield", color: .red))
+			pills.append(NBPillItem(title: .localized("PPQCheck"), icon: "checkmark.shield", color: .red))
 		}
 		
 		if cert.revoked == true {
-			pills.append(NBPillItem(title: "Revoked", icon: "xmark.octagon", color: .red))
+			pills.append(NBPillItem(title: .localized("Revoked"), icon: "xmark.octagon", color: .red))
 		}
 		
 		if let info = cert.expiration?.expirationInfo() {

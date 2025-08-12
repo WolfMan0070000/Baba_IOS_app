@@ -17,7 +17,7 @@ struct TunnelView: View {
 	
 	// MARK: Body
     var body: some View {
-		NBList(.localized("Tunnel & Pairing")) {
+		Group {
 			Section {
 				_tunnelInfo()
 				TunnelHeaderView()
@@ -67,6 +67,7 @@ struct TunnelView: View {
 					doesHavePairingFile = true
 				}
 			)
+			.ignoresSafeArea()
 		}
 		.onAppear {
 			doesHavePairingFile = FileManager.default.fileExists(atPath: HeartbeatManager.pairingFile())

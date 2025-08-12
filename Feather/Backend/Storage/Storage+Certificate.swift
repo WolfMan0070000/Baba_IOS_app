@@ -28,14 +28,10 @@ extension Storage {
 		new.ppQCheck = ppq
 		new.expiration = expiration
 		new.nickname = nickname
-		
-		do {
-			try context.save()
-			generator.impactOccurred()
-			completion(nil)
-		} catch {
-			completion(error)
-		}
+		Storage.shared.revokagedCertificate(for: new)
+		saveContext()
+		generator.impactOccurred()
+		completion(nil)
 	}
 	
 	func deleteCertificate(for cert: CertificatePair) {
@@ -44,6 +40,20 @@ extension Storage {
 		}
 		context.delete(cert)
 		saveContext()
+	}
+	
+	func getCertificate(for index: Int) -> CertificatePair? {
+		let fetchRequest: NSFetchRequest<CertificatePair> = CertificatePair.fetchRequest()
+		fetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \CertificatePair.date, ascending: false)]
+
+		guard
+			let results = try? context.fetch(fetchRequest),
+			index >= 0 && index < results.count
+		else {
+			return nil
+		}
+		
+		return results[index]
 	}
 	
 	func revokagedCertificate(for cert: CertificatePair) {
@@ -57,7 +67,7 @@ extension Storage {
 			if status == 1 {
 				DispatchQueue.main.async {
 					cert.revoked = true
-					Storage.shared.saveContext()
+					self.saveContext()
 				}
 			}
 		}
@@ -91,5 +101,11 @@ extension Storage {
 		}
 		
 		return FileManager.default.certificates(uuid)
+	}
+	
+	func getAllCertificates() -> [CertificatePair] {
+		let fetchRequest: NSFetchRequest<CertificatePair> = CertificatePair.fetchRequest()
+		fetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \CertificatePair.date, ascending: false)]
+		return (try? context.fetch(fetchRequest)) ?? []
 	}
 }

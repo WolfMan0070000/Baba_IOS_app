@@ -64,6 +64,13 @@ final class SigningHandler: NSObject {
 			throw SigningFileHandlerError.infoPlistNotFound
 		}
 		
+		if
+			let identifier = _options.appIdentifier,
+			let oldIdentifier = infoDictionary["CFBundleIdentifier"] as? String
+		{
+			try await _modifyPluginIdentifiers(old: oldIdentifier, new: identifier, for: movedAppPath)
+		}
+		
 		try await _modifyDict(using: infoDictionary, with: _options, to: movedAppPath)
 		
 		if let icon = appIcon {
@@ -74,30 +81,51 @@ final class SigningHandler: NSObject {
 			try await _modifyLocalesForName(name, for: movedAppPath)
 		}
 		
-		if _options.removeWatchPlaceholder {
-			try await _removePlaceholderWatch(for: movedAppPath)
-		}
-		
 		if !_options.removeFiles.isEmpty {
 			try await _removeFiles(for: movedAppPath, from: _options.removeFiles)
 		}
 		
-		try await _removeCodeSignature(for: movedAppPath)
-		try await _removeProvisioning(for: movedAppPath)
+		try await _removePresetFiles(for: movedAppPath)
+		try await _removeWatchIfNeeded(for: movedAppPath)
 		
-		if !_options.injectionFiles.isEmpty {
+		if _options.experiment_supportLiquidGlass {
+			try await _locateMachosAndChangeToSDK26(for: movedAppPath)
+		}
+		
+		if _options.experiment_replaceSubstrateWithEllekit {
 			try await _inject(for: movedAppPath, with: _options)
+		} else {
+			if !_options.injectionFiles.isEmpty {
+				try await _inject(for: movedAppPath, with: _options)
+			}
+		}
+		
+		// iOS "26" (19) needs special treatment
+		if #available(iOS 19, *) {
+			try await _locateMachosAndFixupArm64eSlice(for: movedAppPath)
 		}
 		
 		let handler = ZsignHandler(appUrl: movedAppPath, options: _options, cert: appCertificate)
 		try await handler.disinject()
 		
-		if _options.doAdhocSigning {
-			try await handler.adhocSign()
-		} else if (appCertificate != nil) {
+		if
+			_options.signingOption == .default,
+			appCertificate != nil
+		{
 			try await handler.sign()
+//		} else if _options.signingOption == .adhoc {
+//			try await handler.adhocSign()
+		} else if _options.signingOption == .onlyModify {
+			//
 		} else {
 			throw SigningFileHandlerError.missingCertifcate
+		}
+		
+		try await self.move()
+		try await self.addToDatabase()
+		
+		if let error = handler.hadError {
+			throw error
 		}
 	}
 	
@@ -125,17 +153,20 @@ final class SigningHandler: NSObject {
 			return
 		}
 		
-		let bundle = Bundle(url: appUrl)
-		
-		Storage.shared.addSigned(
-			uuid: _uuid,
-			certificate: _options.doAdhocSigning ? nil : appCertificate,
-			appName: bundle?.name,
-			appIdentifier: bundle?.bundleIdentifier,
-			appVersion: bundle?.version,
-			appIcon: bundle?.iconFileName
-		) { _ in
-			Logger.signing.info("[\(self._uuid)] Added to database")
+		await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+			let bundle = Bundle(url: appUrl)
+			
+			Storage.shared.addSigned(
+				uuid: _uuid,
+				certificate: _options.signingOption != .default ? nil : appCertificate,
+				appName: bundle?.name,
+				appIdentifier: bundle?.bundleIdentifier,
+				appVersion: bundle?.version,
+				appIcon: bundle?.iconFileName
+			) { _ in
+				Logger.signing.info("[\(self._uuid)] Added to database")
+				continuation.resume()
+			}
 		}
 	}
 	
@@ -156,15 +187,32 @@ extension SigningHandler {
 		if options.proMotion { infoDictionary.setObject(true, forKey: "CADisableMinimumFrameDurationOnPhone" as NSCopying) }
 		if options.gameMode { infoDictionary.setObject(true, forKey: "GCSupportsGameMode" as NSCopying)}
 		if options.ipadFullscreen { infoDictionary.setObject(true, forKey: "UIRequiresFullScreen" as NSCopying) }
-		if options.removeSupportedDevices { infoDictionary.removeObject(forKey: "UISupportedDevices") }
 		if options.removeURLScheme { infoDictionary.removeObject(forKey: "CFBundleURLTypes") }
 		
-		// these are for picker arrays, we check if the default option is named "Default" before applying
-		if options.appAppearance != Options.defaultOptions.appAppearance {
-			infoDictionary.setObject(options.appAppearance, forKey: "UIUserInterfaceStyle" as NSCopying)
+		if options.appAppearance != .default {
+			infoDictionary.setObject(options.appAppearance.rawValue, forKey: "UIUserInterfaceStyle" as NSCopying)
 		}
-		if options.minimumAppRequirement != Options.defaultOptions.minimumAppRequirement {
-			infoDictionary.setObject(options.minimumAppRequirement, forKey: "MinimumOSVersion" as NSCopying)
+		if options.minimumAppRequirement != .default {
+			infoDictionary.setObject(options.minimumAppRequirement.rawValue, forKey: "MinimumOSVersion" as NSCopying)
+		}
+		
+		// useless crap
+		if infoDictionary["UISupportedDevices"] != nil {
+			infoDictionary.removeObject(forKey: "UISupportedDevices")
+		}
+		
+		// MARK: Prominant values
+		
+		if let customIdentifier = options.appIdentifier {
+			infoDictionary.setObject(customIdentifier, forKey: "CFBundleIdentifier" as NSCopying)
+		}
+		if let customName = options.appName {
+			infoDictionary.setObject(customName, forKey: "CFBundleDisplayName" as NSCopying)
+			infoDictionary.setObject(customName, forKey: "CFBundleName" as NSCopying)
+		}
+		if let customVersion = options.appVersion {
+			infoDictionary.setObject(customVersion, forKey: "CFBundleShortVersionString" as NSCopying)
+			infoDictionary.setObject(customVersion, forKey: "CFBundleVersion" as NSCopying)
 		}
 		
 		try infoDictionary.write(to: app.appendingPathComponent("Info.plist"))
@@ -204,21 +252,6 @@ extension SigningHandler {
 		try infoDictionary.write(to: app.appendingPathComponent("Info.plist"))
 	}
 	
-	private func _removePlaceholderWatch(for app: URL) async throws {
-		let path = app.appendingPathComponent("com.apple.WatchPlaceholder")
-		try _fileManager.removeFileIfNeeded(at: path)
-	}
-	
-	private func _removeFiles(for app: URL, from appendingComponent: [String]) async throws {
-		let filesToRemove = appendingComponent.map {
-			app.appendingPathComponent($0)
-		}
-		
-		for url in filesToRemove {
-			try _fileManager.removeFileIfNeeded(at: url)
-		}
-	}
-	
 	private func _modifyLocalesForName(_ name: String, for app: URL) async throws {
 		let localizationBundles = try _fileManager
 			.contentsOfDirectory(at: app, includingPropertiesForKeys: nil)
@@ -239,19 +272,154 @@ extension SigningHandler {
 		}
 	}
 	
-	private func _removeCodeSignature(for app: URL) async throws {
-		let provisioningFilePath = app.appendingPathComponent("_CodeSignature")
-		try _fileManager.removeFileIfNeeded(at: provisioningFilePath)
+	private func _modifyPluginIdentifiers(
+		old oldIdentifier: String,
+		new newIdentifier: String,
+		for app: URL
+	) async throws {
+		let pluginBundles = _enumerateFiles(at: app) {
+			$0.hasSuffix(".app") || $0.hasSuffix(".appex")
+		}
+		
+		for bundleURL in pluginBundles {
+			let infoPlistURL = bundleURL.appendingPathComponent("Info.plist")
+			
+			guard let infoDict = NSDictionary(contentsOf: infoPlistURL)?.mutableCopy() as? NSMutableDictionary else {
+				continue
+			}
+			
+			var didChange = false
+			
+			// CFBundleIdentifier
+			if let oldValue = infoDict["CFBundleIdentifier"] as? String {
+				let newValue = oldValue.replacingOccurrences(of: oldIdentifier, with: newIdentifier)
+				if oldValue != newValue {
+					infoDict["CFBundleIdentifier"] = newValue
+					didChange = true
+				}
+			}
+			
+			// WKCompanionAppBundleIdentifier
+			if let oldValue = infoDict["WKCompanionAppBundleIdentifier"] as? String {
+				let newValue = oldValue.replacingOccurrences(of: oldIdentifier, with: newIdentifier)
+				if oldValue != newValue {
+					infoDict["WKCompanionAppBundleIdentifier"] = newValue
+					didChange = true
+				}
+			}
+			
+			// NSExtension → NSExtensionAttributes → WKAppBundleIdentifier
+			if
+				let extensionDict = infoDict["NSExtension"] as? NSMutableDictionary,
+				let attributes = extensionDict["NSExtensionAttributes"] as? NSMutableDictionary,
+				let oldValue = attributes["WKAppBundleIdentifier"] as? String
+			{
+				let newValue = oldValue.replacingOccurrences(of: oldIdentifier, with: newIdentifier)
+				if oldValue != newValue {
+					attributes["WKAppBundleIdentifier"] = newValue
+					didChange = true
+				}
+			}
+			
+			if didChange {
+				infoDict.write(to: infoPlistURL, atomically: true)
+			}
+		}
 	}
 	
-	private func _removeProvisioning(for app: URL) async throws {
-		let provisioningFilePath = app.appendingPathComponent("embedded.mobileprovision")
-		try _fileManager.removeFileIfNeeded(at: provisioningFilePath)
+	private func _removePresetFiles(for app: URL) async throws {
+		var files = [
+			"embedded.mobileprovision", // Remove this because zsign doesn't replace it
+			"com.apple.WatchPlaceholder", // Useless
+			"SignedByEsign" // Useless
+		].map {
+			app.appendingPathComponent($0)
+		}
+		
+		await files += try _locateCodeSignatureDirectories(for: app)
+		
+		for file in files {
+			try _fileManager.removeFileIfNeeded(at: file)
+		}
+	}
+	
+	// horrible edge-case
+	private func _removeWatchIfNeeded(for app: URL) async throws {
+		let watchDir = app.appendingPathComponent("Watch")
+		guard _fileManager.fileExists(atPath: watchDir.path) else { return }
+		
+		let contents = try _fileManager.contentsOfDirectory(at: watchDir, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles])
+		
+		for app in contents where app.pathExtension == "app" {
+			let infoPlist = app.appendingPathComponent("Info.plist")
+			if !_fileManager.fileExists(atPath: infoPlist.path) {
+				try? _fileManager.removeItem(at: app)
+			}
+		}
+	}
+	
+	private func _removeFiles(for app: URL, from appendingComponent: [String]) async throws {
+		let filesToRemove = appendingComponent.map {
+			app.appendingPathComponent($0)
+		}
+		
+		for url in filesToRemove {
+			try _fileManager.removeFileIfNeeded(at: url)
+		}
 	}
 	
 	private func _inject(for app: URL, with options: Options) async throws {
 		let handler = TweakHandler(app: app, options: options)
 		try await handler.getInputFiles()
+	}
+	
+	private func _locateMachosAndChangeToSDK26(for app: URL) async throws {
+		if let url = Bundle(url: app)?.executableURL {
+			LCPatchMachOForSDK26(app.appendingPathComponent(url.relativePath).relativePath)
+		}
+	}
+	
+	private func _locateCodeSignatureDirectories(for app: URL) async throws -> [URL] {
+		_enumerateFiles(at: app) { $0.hasSuffix("_CodeSignature") }
+	}
+	
+	@available(iOS 19, *)
+	private func _locateMachosAndFixupArm64eSlice(for app: URL) async throws {
+		let machoFiles = _enumerateFiles(at: app) {
+			$0.hasSuffix(".dylib") || $0.hasSuffix(".framework")
+		}
+		
+		for fileURL in machoFiles {
+			switch fileURL.pathExtension {
+			case "dylib":
+				LCPatchMachOFixupARM64eSlice(fileURL.path)
+			case "framework":
+				if
+					let bundle = Bundle(url: fileURL),
+					let execURL = bundle.executableURL
+				{
+					LCPatchMachOFixupARM64eSlice(execURL.path)
+				}
+			default:
+				continue
+			}
+		}
+	}
+	
+	private func _enumerateFiles(at base: URL, where predicate: (String) -> Bool) -> [URL] {
+		guard let fileEnum = _fileManager.enumerator(atPath: base.path()) else {
+			return []
+		}
+		
+		var results: [URL] = []
+		
+		while let file = fileEnum.nextObject() as? String {
+			if predicate(file) {
+				results.append(base.appendingPathComponent(file))
+			}
+		}
+		
+		return results
 	}
 }
 
@@ -264,16 +432,11 @@ enum SigningFileHandlerError: Error, LocalizedError {
 	
 	var errorDescription: String? {
 		switch self {
-		case .appNotFound:
-			return "Unable to locate bundle path."
-		case .infoPlistNotFound:
-			return "Unable to locate info.plist path."
-		case .missingCertifcate:
-			return "No certificate was specified."
-		case .disinjectFailed:
-			return "Removing mach-O load paths failed."
-		case .signFailed:
-			return "Signing failed."
+		case .appNotFound: "Unable to locate bundle path."
+		case .infoPlistNotFound: "Unable to locate info.plist path."
+		case .missingCertifcate: "No certificate was specified."
+		case .disinjectFailed: "Removing mach-O load paths failed."
+		case .signFailed: "Signing failed."
 		}
 	}
 }
