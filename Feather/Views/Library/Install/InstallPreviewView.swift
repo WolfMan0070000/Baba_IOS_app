@@ -91,9 +91,7 @@ struct InstallPreviewView: View {
 	}
 	
 	private func _install() {
-		guard
-			app.identifier != Bundle.main.bundleIdentifier! || _installationMethod == 1
-		else {
+		guard isSharing || app.identifier != Bundle.main.bundleIdentifier! || _installationMethod == 1 else {
 			UIAlertController.showAlertWithOk(
 				title: .localized("Install"),
 				message: .localized("You cannot update ‘%@‘ with itself, please use an alternative tool to update it.", arguments: Bundle.main.name)
@@ -116,7 +114,7 @@ struct InstallPreviewView: View {
 						}
 					} else if await _installationMethod == 1 {
 						let handler = await InstallationProxy(viewModel: viewModel)
-						try await handler.install(at: packageUrl)
+						try await handler.install(at: packageUrl, suspend: app.identifier == Bundle.main.bundleIdentifier!)
 					}
 				} else {
 					let package = try await handler.moveToArchive(packageUrl, shouldOpen: !_useShareSheet)
@@ -138,7 +136,7 @@ struct InstallPreviewView: View {
 				await MainActor.run {
 					UIAlertController.showAlertWithOk(
 						title: .localized("Install"),
-						message: error.localizedDescription,
+						message: String(describing: error),
 						action: {
 							HeartbeatManager.shared.start(true)
 							dismiss()

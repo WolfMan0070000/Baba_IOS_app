@@ -6,13 +6,14 @@
 //
 
 import Foundation.NSString
-import SwiftUICore
+import SwiftUI
 
 extension String {
 	// from: https://github.com/NSAntoine/Antoine/blob/main/Antoine/Backend/Extensions/Foundation.swift#L43-L55
 	// was given permission to use any code from antoine as I like - thank you Serena!~
 	
 	static public func localized(_ name: String) -> String {
+<<<<<<< HEAD
 		// Retrieve the language chosen inside the app (defaults to system language if not set)
 		let languageCode = UserDefaults.standard.string(forKey: "Feather.appLanguage") ?? Locale.preferredLanguages.first ?? "en"
 		if
@@ -38,17 +39,24 @@ extension String {
 		}()
 		let format = NSLocalizedString(name, tableName: nil, bundle: bundle, value: name, comment: "")
 		return String(format: format, arguments: arguments)
+=======
+		NSLocalizedString(name, comment: "")
+	}
+	
+	static public func localized(_ name: String, arguments: CVarArg...) -> String {
+		String(format: NSLocalizedString(name, comment: ""), arguments: arguments)
+>>>>>>> 1ee6940f8d94d8b3ad4ddf1658f995d4b77c7864
 	}
 	/// Localizes the current string using the main bundle.
 	///
 	/// - Returns: The localized string.
 	public func localized() -> String {
-		return String.localized(self)
+		String.localized(self)
 	}
 }
 
 extension LocalizedStringKey {
 	static public func localized(_ key: String) -> LocalizedStringKey {
-		return LocalizedStringKey(key)
+		LocalizedStringKey(key)
 	}
 }

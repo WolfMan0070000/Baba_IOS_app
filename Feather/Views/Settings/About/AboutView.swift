@@ -9,6 +9,15 @@ import SwiftUI
 import NimbleViews
 import NimbleJSON
 
+// MARK: - Extension: Model
+extension AboutView {
+	struct CreditsModel: Codable, Hashable {
+		let name: String?
+		let desc: String?
+		let github: String
+	}
+}
+
 // MARK: - View
 struct AboutView: View {
 	typealias CreditsDataHandler = Result<[CreditsModel], Error>
@@ -23,6 +32,7 @@ struct AboutView: View {
 	
 	// MARK: Body
 	var body: some View {
+<<<<<<< HEAD
 		NBList(.localized("About Baba App")) {
             Section {
                 VStack {
@@ -51,6 +61,54 @@ struct AboutView: View {
                     .padding()
             }
         }
+=======
+		NBList(.localized("About")) {
+			if !isLoading {
+				Section {
+					VStack {
+						Image(uiImage: AppIconView.altImage(UIApplication.shared.alternateIconName))
+							.appIconStyle(size: 72)
+						
+						Text(Bundle.main.exec)
+							.font(.largeTitle)
+							.bold()
+							.foregroundStyle(Color.accentColor)
+						
+						HStack(spacing: 4) {
+							Text(.localized("Version"))
+							Text(Bundle.main.version)
+						}
+						.font(.footnote)
+						.foregroundStyle(.secondary)
+					}
+				}
+				.frame(maxWidth: .infinity)
+				.listRowBackground(EmptyView())
+				
+				NBSection(.localized("Credits")) {
+					ForEach(_credits, id: \.github) { credit in
+						_credit(name: credit.name, desc: credit.desc, github: credit.github)
+					}
+					.transition(.slide)
+				}
+				
+				NBSection(.localized("Sponsors")) {
+					Text(try! AttributedString(markdown: _donators.map {
+						"[\($0.name ?? $0.github)](https://github.com/\($0.github))"
+					}.joined(separator: ", ")))
+					.transition(.slide)
+					
+					Text(.localized("💜 This couldn't of been done without my sponsors!"))
+						.foregroundStyle(.secondary)
+						.padding(.vertical, 2)
+				}
+			}
+		}
+		.animation(.default, value: isLoading)
+		.task {
+			await _fetchAllData()
+		}
+>>>>>>> 1ee6940f8d94d8b3ad4ddf1658f995d4b77c7864
 	}
 	
 	private func _fetchAllData() async {
@@ -102,11 +160,18 @@ extension AboutView {
 		Button {
 			UIApplication.open("https://github.com/\(github)")
 		} label: {
-			NBTitleWithSubtitleView(
-				title: name ?? github,
-				subtitle: desc ?? "",
-				linelimit: 0
-			)
+			HStack {
+				FRIconCellView(
+					title: name ?? github,
+					subtitle: desc ?? "",
+					iconUrl: URL(string: "https://github.com/\(github).png")!,
+					size: 45,
+					isCircle: true
+				)
+				
+				Image(systemName: "arrow.up.right")
+					.foregroundColor(.secondary.opacity(0.65))
+			}
 		}
 	}
 }

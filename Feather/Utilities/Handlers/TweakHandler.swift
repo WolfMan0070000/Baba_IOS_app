@@ -27,25 +27,50 @@ class TweakHandler {
 		self._options = options
 		self._urls = options.injectionFiles
 	}
-
-	public func getInputFiles() async throws {
-		guard !_urls.isEmpty else {
-			return
-		}
-		
+	
+	private func _checkEllekit() async throws {
 		let frameworksPath = _app.appendingPathComponent("Frameworks").appendingPathComponent("CydiaSubstrate.framework")
-		if !_fileManager.fileExists(atPath: frameworksPath.path) {
+
+		func addEllekit() async throws {
 			if let ellekitURL = Bundle.main.url(forResource: "ellekit", withExtension: "deb") {
 				self._urls.insert(ellekitURL, at: 0)
 			} else {
 				Logger.misc.info("ellekit.deb not found in the app bundle")
+			}
+			
+			try _fileManager.createDirectoryIfNeeded(at: _app.appendingPathComponent("Frameworks"))
+		}
+		// we should check if CydiaSubstrate.framework exists, if it doesn't
+		// just add ellekit
+		// experiment_replaceSubstrateWithEllekit:
+		// 	for this version, we need to replace CydiaSubstrate.framework with
+		//	our own version containing ElleKit
+		// other:
+		// 	just return if it exists, should work fine
+		if _fileManager.fileExists(atPath: frameworksPath.path) {
+			if _options.experiment_replaceSubstrateWithEllekit {
+				Logger.misc.info("Attempting to replace Substrate with ElleKit")
+				try _fileManager.removeFileIfNeeded(at: frameworksPath)
+				try await addEllekit()
+			} else {
 				return
 			}
+		} else {
+			guard !_urls.isEmpty else { return }
+			try await addEllekit()
+		}
+	}
+
+	public func getInputFiles() async throws {
+		Logger.misc.info("Attempting to inject")
+		
+		if !_options.experiment_replaceSubstrateWithEllekit {
+			guard !_urls.isEmpty else { return }
 		}
 
+		try await _checkEllekit()
+
 		let baseTmpDir = _fileManager.temporaryDirectory.appendingPathComponent("FeatherTweak_\(UUID().uuidString)")
-		
-		try _fileManager.createDirectoryIfNeeded(at: _app.appendingPathComponent("Frameworks"))
 		try _fileManager.createDirectoryIfNeeded(at: baseTmpDir)
 		
 		// check for appropriate files, if theres debs
@@ -96,7 +121,7 @@ class TweakHandler {
 		var injectFolder = _options.injectFolder
 		
 		// check for "/Frameworks/", then append the destinationUrl
-		if _options.injectFolder.contains(Options.injectFolderValues[1]) {
+		if _options.injectFolder == .frameworks {
 			destinationURL = destinationURL.appendingPathComponent("Frameworks")
 		}
 		
@@ -104,10 +129,9 @@ class TweakHandler {
 		// the inject folder to be root "/" instead, as the @rpath is already in
 		// frameworks
 		if
-			_options.injectPath.contains(Options.injectPathValues[1]) &&
-			_options.injectFolder.contains(Options.injectFolderValues[1])
+			_options.injectPath == .rpath && _options.injectFolder == .frameworks
 		{
-			injectFolder = Options.injectFolderValues[0]
+			injectFolder = .root
 		}
 		
 		destinationURL = destinationURL.appendingPathComponent(url.lastPathComponent)
@@ -131,7 +155,7 @@ class TweakHandler {
 		// inject if there's a valid app main executable
 		_ = Zsign.injectDyLib(
 			appExecutable: appexe.path,
-			with: "\(_options.injectPath)\(injectFolder)\(destinationURL.lastPathComponent)"
+			with: "\(_options.injectPath.rawValue)\(injectFolder.rawValue)\(destinationURL.lastPathComponent)"
 		)
 	}
 	
