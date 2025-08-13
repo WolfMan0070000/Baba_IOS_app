@@ -7,6 +7,8 @@
 
 import SwiftUI
 
+import SwiftUI
+
 struct FRAppIconView: View {
 	private var _app: AppInfoPresentable
 	private var _size: CGFloat

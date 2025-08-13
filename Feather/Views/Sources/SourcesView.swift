@@ -1,4 +1,3 @@
-//
 //  SourcesView.swift
 //  Feather
 //
