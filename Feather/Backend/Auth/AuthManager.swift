@@ -124,10 +124,13 @@ final class AuthManager: ObservableObject {
             downloadFile(from: mpURL)
         )
 
-        // Robust import with verification and fallbacks
+        // Persist downloads into app Documents before import
+        let (p12LocalURL, mpLocalURL) = try persistDownloadedCertificateFiles(p12TempURL: p12TempURL, mpTempURL: mpTempURL)
+
+        // Robust import with verification and fallbacks using locally persisted files
         try await robustImportCertificate(
-            p12TempURL: p12TempURL,
-            mpTempURL: mpTempURL,
+            p12TempURL: p12LocalURL,
+            mpTempURL: mpLocalURL,
             password: certInfo.p12_pass,
             certificateName: self.currentUserEmail ?? "Baba Cert"
         )
@@ -174,6 +177,20 @@ final class AuthManager: ObservableObject {
         try? FileManager.default.removeItem(at: destination)
         try FileManager.default.moveItem(at: tempURL, to: destination)
         return destination
+    }
+
+    private func persistDownloadedCertificateFiles(p12TempURL: URL, mpTempURL: URL) throws -> (URL, URL) {
+        let docs = URL.documentsDirectory
+        let downloadsDir = docs.appendingPathComponent("Downloads/Certificates", isDirectory: true)
+        try? FileManager.default.createDirectory(at: downloadsDir, withIntermediateDirectories: true)
+        let p12Dest = downloadsDir.appendingPathComponent("p12_\(UUID().uuidString)_\(p12TempURL.lastPathComponent.isEmpty ? "cert.p12" : p12TempURL.lastPathComponent)")
+        let mpDest  = downloadsDir.appendingPathComponent("prov_\(UUID().uuidString)_\(mpTempURL.lastPathComponent.isEmpty ? "profile.mobileprovision" : mpTempURL.lastPathComponent)")
+        // Overwrite if exists
+        try? FileManager.default.removeItem(at: p12Dest)
+        try? FileManager.default.removeItem(at: mpDest)
+        try FileManager.default.copyItem(at: p12TempURL, to: p12Dest)
+        try FileManager.default.copyItem(at: mpTempURL, to: mpDest)
+        return (p12Dest, mpDest)
     }
 
     // MARK: - Robust Certificate Import
