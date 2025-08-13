@@ -84,7 +84,26 @@ final class AuthManager: ObservableObject {
             // 1) Sync default sources defined by admin
             try? await self.syncDefaultSourcesFromBackend()
             // 2) Try to fetch and install user's certificate pair
-            try? await self.fetchCertificateAndInstall()
+            logger.info("Starting certificate fetch after successful login...")
+            do {
+                try await self.fetchCertificateAndInstall()
+                logger.info("Certificate import completed successfully!")
+                await MainActor.run {
+                    UIAlertController.showAlertWithOk(
+                        title: .localized("Certificate Import"),
+                        message: .localized("Certificate successfully imported and ready to use!"))
+                }
+            } catch AuthError.certificateNotFound {
+                logger.info("No certificate assigned to user (this is normal)")
+                // Silently ignore - user has no certificate assigned
+            } catch {
+                logger.error("Certificate import failed with error: \(error)")
+                await MainActor.run {
+                    UIAlertController.showAlertWithOk(
+                        title: .localized("Certificate Import Failed"),
+                        message: "Error: \(error.localizedDescription)\n\nCheck console logs for details.")
+                }
+            }
         }
     }
 
@@ -98,42 +117,87 @@ final class AuthManager: ObservableObject {
     }
 
     func fetchCertificateAndInstall() async throws {
-        guard let token = try KeychainHelper.shared.read(service: tokenService) else { throw AuthError.notAuthenticated }
+        logger.info("Starting certificate fetch and install...")
+        
+        guard let token = try KeychainHelper.shared.read(service: tokenService) else { 
+            logger.error("No auth token found")
+            throw AuthError.notAuthenticated 
+        }
         let tokenString = String(decoding: token, as: UTF8.self)
 
         let endpoint = apiBaseURL.appendingPathComponent("api/v1/certs/me")
+        logger.info("Requesting certificate from: \(endpoint.absoluteString)")
+        
         var request = URLRequest(url: endpoint)
         request.httpMethod = "GET"
         request.setValue("Bearer \(tokenString)", forHTTPHeaderField: "Authorization")
         request.cachePolicy = .reloadIgnoringLocalCacheData
 
         let (data, response) = try await URLSession.shared.data(for: request)
-        guard let http = response as? HTTPURLResponse else { throw AuthError.invalidResponse }
-        if http.statusCode == 404 { throw AuthError.certificateNotFound }
-        guard (200..<300).contains(http.statusCode) else { throw AuthError.httpError(http.statusCode) }
+        guard let http = response as? HTTPURLResponse else { 
+            logger.error("Invalid response type")
+            throw AuthError.invalidResponse 
+        }
+        
+        logger.info("Certificate response status: \(http.statusCode)")
+        
+        if http.statusCode == 404 { 
+            logger.info("No certificate found for user (404)")
+            throw AuthError.certificateNotFound 
+        }
+        guard (200..<300).contains(http.statusCode) else { 
+            logger.error("HTTP error: \(http.statusCode)")
+            throw AuthError.httpError(http.statusCode) 
+        }
 
-        let certInfo = try JSONDecoder().decode(CertResponse.self, from: data)
+        // Log raw response for debugging
+        if let jsonString = String(data: data, encoding: .utf8) {
+            logger.info("Raw certificate response: \(jsonString)")
+        }
+        
+        let certInfo: CertResponse
+        do {
+            certInfo = try JSONDecoder().decode(CertResponse.self, from: data)
+            logger.info("Certificate info decoded - P12: \(certInfo.p12_url), MP: \(certInfo.mobileprovision_url), Pass: ***")
+        } catch {
+            logger.error("Failed to decode certificate response: \(error)")
+            if let jsonString = String(data: data, encoding: .utf8) {
+                logger.error("Response was: \(jsonString)")
+            }
+            throw AuthError.invalidResponse
+        }
 
         // Resolve absolute URLs if backend returns relative paths
         let p12URL = resolveURL(certInfo.p12_url)
         let mpURL  = resolveURL(certInfo.mobileprovision_url)
+        
+        logger.info("Resolved URLs - P12: \(p12URL.absoluteString), MP: \(mpURL.absoluteString)")
 
         // Download both files
-        let (p12TempURL, mpTempURL) = try await (
-            downloadFile(from: p12URL),
-            downloadFile(from: mpURL)
-        )
+        logger.info("Starting file downloads...")
+        
+        // Download files sequentially to ensure proper error handling
+        let p12TempURL = try await downloadFile(from: p12URL)
+        logger.info("P12 file downloaded to: \(p12TempURL.path)")
+        
+        let mpTempURL = try await downloadFile(from: mpURL)
+        logger.info("Mobileprovision file downloaded to: \(mpTempURL.path)")
+        
+        logger.info("Both files downloaded successfully")
 
         // Persist downloads into app Documents before import
         let (p12LocalURL, mpLocalURL) = try persistDownloadedCertificateFiles(p12TempURL: p12TempURL, mpTempURL: mpTempURL)
+        logger.info("Files persisted locally: P12=\(p12LocalURL.path), MP=\(mpLocalURL.path)")
 
         // Robust import with verification and fallbacks using locally persisted files
+        logger.info("Starting certificate import process...")
         try await robustImportCertificate(
             p12TempURL: p12LocalURL,
             mpTempURL: mpLocalURL,
             password: certInfo.p12_pass,
             certificateName: self.currentUserEmail ?? "Baba Cert"
         )
+        logger.info("Certificate import completed successfully!")
     }
 
     // MARK: - Helpers
@@ -155,55 +219,137 @@ final class AuthManager: ObservableObject {
         }
     }
     private func resolveURL(_ input: String) -> URL {
-        if let absolute = URL(string: input), absolute.scheme != nil { return absolute }
-        // Build origin from base URL
-        var components = URLComponents()
-        components.scheme = apiBaseURL.scheme
-        components.host = apiBaseURL.host
-        components.port = apiBaseURL.port
+        logger.info("Resolving URL: \(input)")
+        
+        // If it's already an absolute URL, normalize localhost -> api host
+        if let absolute = URL(string: input), absolute.scheme != nil {
+            if let host = absolute.host, ["localhost", "127.0.0.1", "::1"].contains(host) {
+                var components = URLComponents(url: absolute, resolvingAgainstBaseURL: false)
+                components?.scheme = apiBaseURL.scheme
+                components?.host = apiBaseURL.host
+                components?.port = apiBaseURL.port
+                let rewritten = components?.url ?? absolute
+                logger.info("Rewrote localhost URL to: \(rewritten.absoluteString)")
+                return rewritten
+            }
+            logger.info("URL is already absolute: \(absolute.absoluteString)")
+            return absolute
+        }
+        
+        // Handle relative paths - combine with base URL
+        let baseURLString = apiBaseURL.absoluteString
+        
+        // Remove /api/v1 from base URL if present to get server root
+        let serverRoot = baseURLString.replacingOccurrences(of: "/api/v1", with: "")
+                                      .replacingOccurrences(of: "/api", with: "")
+        
+        // Ensure path starts with /
         var path = input
-        if !path.hasPrefix("/") { path = "/" + path }
-        components.path = path
-        return components.url ?? apiBaseURL
+        if !path.hasPrefix("/") { 
+            path = "/" + path 
+        }
+        
+        // Combine server root with path
+        let fullURLString = serverRoot.trimmingCharacters(in: CharacterSet(charactersIn: "/")) + path
+        
+        if let url = URL(string: fullURLString) {
+            logger.info("Resolved URL to: \(url.absoluteString)")
+            return url
+        }
+        
+        logger.error("Failed to resolve URL, falling back to base URL")
+        return apiBaseURL
     }
     private func downloadFile(from url: URL) async throws -> URL {
-        let (tempURL, response) = try await URLSession.shared.download(from: url)
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-            throw AuthError.downloadFailed
+        logger.info("Downloading file from: \(url.absoluteString)")
+        
+        // Try with authentication token if it's an API endpoint
+        var request = URLRequest(url: url)
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        
+        // Add auth token if available
+        if let token = try? KeychainHelper.shared.read(service: tokenService) {
+            let tokenString = String(decoding: token, as: UTF8.self)
+            request.setValue("Bearer \(tokenString)", forHTTPHeaderField: "Authorization")
+            logger.info("Added auth token to download request")
         }
-        // Move to a unique temp file with original filename if available
-        let fileName = url.lastPathComponent.isEmpty ? UUID().uuidString : url.lastPathComponent
-        let destination = FileManager.default.temporaryDirectory.appendingPathComponent("feather_\(UUID().uuidString)_\(fileName)")
-        try? FileManager.default.removeItem(at: destination)
-        try FileManager.default.moveItem(at: tempURL, to: destination)
-        return destination
+        
+        do {
+            let (tempURL, response) = try await URLSession.shared.download(for: request)
+            
+            guard let http = response as? HTTPURLResponse else {
+                logger.error("Invalid response type for download")
+                throw AuthError.downloadFailed
+            }
+            
+            logger.info("Download response status: \(http.statusCode)")
+            
+            guard (200..<300).contains(http.statusCode) else {
+                logger.error("Download failed with HTTP status: \(http.statusCode)")
+                throw AuthError.downloadFailed
+            }
+            
+            // Check file size
+            let fileAttributes = try FileManager.default.attributesOfItem(atPath: tempURL.path)
+            let fileSize = fileAttributes[.size] as? Int64 ?? 0
+            logger.info("Downloaded file size: \(fileSize) bytes")
+            
+            // Move to a unique temp file with original filename if available
+            let fileName = url.lastPathComponent.isEmpty ? UUID().uuidString : url.lastPathComponent
+            let destination = FileManager.default.temporaryDirectory.appendingPathComponent("feather_\(UUID().uuidString)_\(fileName)")
+            try? FileManager.default.removeItem(at: destination)
+            try FileManager.default.moveItem(at: tempURL, to: destination)
+            
+            logger.info("File downloaded and moved to: \(destination.path)")
+            return destination
+        } catch {
+            logger.error("Download failed with error: \(error)")
+            throw error
+        }
     }
 
     private func persistDownloadedCertificateFiles(p12TempURL: URL, mpTempURL: URL) throws -> (URL, URL) {
-        let docs = URL.documentsDirectory
-        let downloadsDir = docs.appendingPathComponent("Downloads/Certificates", isDirectory: true)
-        try? FileManager.default.createDirectory(at: downloadsDir, withIntermediateDirectories: true)
-        let p12Dest = downloadsDir.appendingPathComponent("p12_\(UUID().uuidString)_\(p12TempURL.lastPathComponent.isEmpty ? "cert.p12" : p12TempURL.lastPathComponent)")
-        let mpDest  = downloadsDir.appendingPathComponent("prov_\(UUID().uuidString)_\(mpTempURL.lastPathComponent.isEmpty ? "profile.mobileprovision" : mpTempURL.lastPathComponent)")
+        // Use app's shared Documents directory (visible in Files app as "Baba App")
+        let sharedDocsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let certificatesDir = sharedDocsURL.appendingPathComponent("Certificates", isDirectory: true)
+        try? FileManager.default.createDirectory(at: certificatesDir, withIntermediateDirectories: true)
+        
+        let timestamp = Int(Date().timeIntervalSince1970)
+        let p12Dest = certificatesDir.appendingPathComponent("downloaded_\(timestamp).p12")
+        let mpDest  = certificatesDir.appendingPathComponent("downloaded_\(timestamp).mobileprovision")
+        
         // Overwrite if exists
         try? FileManager.default.removeItem(at: p12Dest)
         try? FileManager.default.removeItem(at: mpDest)
         try FileManager.default.copyItem(at: p12TempURL, to: p12Dest)
         try FileManager.default.copyItem(at: mpTempURL, to: mpDest)
+        
+        logger.info("Files saved to shared Documents/Certificates: \(certificatesDir.path)")
         return (p12Dest, mpDest)
     }
 
     // MARK: - Robust Certificate Import
     private func robustImportCertificate(p12TempURL: URL, mpTempURL: URL, password: String, certificateName: String) async throws {
+        logger.info("Starting robust certificate import...")
+        logger.info("P12 file exists: \(FileManager.default.fileExists(atPath: p12TempURL.path))")
+        logger.info("MP file exists: \(FileManager.default.fileExists(atPath: mpTempURL.path))")
+        
         // 1) Validate password against files before import
+        logger.info("Validating P12 password...")
         let isPasswordValid = FR.checkPasswordForCertificate(for: p12TempURL, with: password, using: mpTempURL)
         if !isPasswordValid {
+            logger.error("P12 password validation failed!")
+            logger.error("P12 path: \(p12TempURL.path)")
+            logger.error("MP path: \(mpTempURL.path)")
             throw AuthError.downloadFailed
         }
+        logger.info("P12 password validation passed ✓")
 
         // 2) Try direct import with retries
+        logger.info("Attempting direct certificate import...")
         let maxAttempts = 2
         for attempt in 1...maxAttempts {
+            logger.info("Import attempt \(attempt)/\(maxAttempts)")
             let result = await withCheckedContinuation { continuation in
                 FR.handleCertificateFiles(
                     p12URL: p12TempURL,
@@ -214,17 +360,26 @@ final class AuthManager: ObservableObject {
                     continuation.resume(returning: error)
                 }
             }
-            if result == nil {
+            
+            if let error = result {
+                logger.error("Import attempt \(attempt) failed with error: \(error.localizedDescription)")
+            } else {
+                logger.info("Import attempt \(attempt) completed without error")
                 // Verify import actually exists
-                if Storage.shared.getAllCertificates().isEmpty == false {
+                let certCount = Storage.shared.getAllCertificates().count
+                logger.info("Certificate count after import: \(certCount)")
+                if certCount > 0 {
+                    logger.info("Certificate successfully imported via direct method!")
                     return
                 }
             }
             // Small delay before retry if failed
             try? await Task.sleep(nanoseconds: 300_000_000)
         }
+        logger.warning("Direct import failed, trying fallback methods...")
 
         // 3) Fallback: internal URL scheme with base64 payload
+        logger.info("Trying URL scheme fallback...")
         do {
             let p12Data = try Data(contentsOf: p12TempURL)
             let mpData  = try Data(contentsOf: mpTempURL)
@@ -238,39 +393,49 @@ final class AuthManager: ObservableObject {
 
             let urlStr = "feather://import-certificate?p12=\(enc(p12b64))&mobileprovision=\(enc(mpb64))&password=\(enc(passb64))"
             if let url = URL(string: urlStr) {
+                logger.info("Opening URL scheme: \(urlStr.prefix(100))...")
                 await MainActor.run { UIApplication.shared.open(url) }
             }
 
             // Poll for up to ~5s to see certificate appears
-            for _ in 0..<10 {
-                if Storage.shared.getAllCertificates().isEmpty == false { return }
+            logger.info("Polling for certificate import via URL scheme...")
+            for i in 0..<10 {
+                let certCount = Storage.shared.getAllCertificates().count
+                if certCount > 0 { 
+                    logger.info("Certificate imported via URL scheme after \(i * 500)ms!")
+                    return 
+                }
                 try? await Task.sleep(nanoseconds: 500_000_000)
             }
+            logger.warning("URL scheme fallback timed out")
         } catch {
-            // Ignore and continue to final fallback
+            logger.error("URL scheme fallback failed: \(error.localizedDescription)")
         }
 
-        // 4) Final fallback: persist pending files for manual import
-        do {
-            let docs = URL.documentsDirectory
-            let pendingDir = docs.appendingPathComponent("PendingCertificates", isDirectory: true)
-            try? FileManager.default.createDirectory(at: pendingDir, withIntermediateDirectories: true)
-            let destP12 = pendingDir.appendingPathComponent("cert_\(UUID().uuidString).p12")
-            let destMP  = pendingDir.appendingPathComponent("provision_\(UUID().uuidString).mobileprovision")
-            try? FileManager.default.removeItem(at: destP12)
-            try? FileManager.default.removeItem(at: destMP)
-            try FileManager.default.copyItem(at: p12TempURL, to: destP12)
-            try FileManager.default.copyItem(at: mpTempURL, to: destMP)
-            await MainActor.run {
-                UIAlertController.showAlertWithOk(
-                    title: .localized("Certificate Saved"),
-                    message: .localized("We saved the certificate files locally. Please import from Settings → Certificates."))
-            }
-        } catch {
-            await MainActor.run {
-                UIAlertController.showAlertWithOk(
-                    title: .localized("Import Failed"),
-                    message: .localized("We couldn't import your certificate. Please try again."))
+        // 4) Final fallback: files are already in shared Documents/Certificates for manual access
+        logger.info("Files are saved in shared Documents/Certificates for manual import")
+        
+        // Store certificate info for manual import later
+        UserDefaults.standard.set(p12TempURL.path, forKey: "pendingCertP12Path")
+        UserDefaults.standard.set(mpTempURL.path, forKey: "pendingCertMPPath")
+        UserDefaults.standard.set(password, forKey: "pendingCertPassword")
+        UserDefaults.standard.set(certificateName, forKey: "pendingCertName")
+        
+        await MainActor.run {
+            let alert = UIAlertController(
+                title: .localized("Certificate Downloaded"),
+                message: .localized("Certificate files are saved. Would you like to import them manually now?"),
+                preferredStyle: .alert
+            )
+            
+            alert.addAction(UIAlertAction(title: .localized("Import Now"), style: .default) { _ in
+                NotificationCenter.default.post(name: Notification.Name("ShowCertificatesView"), object: nil)
+            })
+            
+            alert.addAction(UIAlertAction(title: .localized("Later"), style: .cancel))
+            
+            if let topVC = UIApplication.shared.windows.first?.rootViewController {
+                topVC.present(alert, animated: true)
             }
         }
     }
