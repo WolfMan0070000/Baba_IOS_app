@@ -45,6 +45,10 @@ struct LoginView: View {
                     if isLoading { ProgressView() } else { Text("Login") }
                 }
                 .disabled(isLoading || email.isEmpty || password.isEmpty)
+                Button(role: .destructive) {
+                    AuthManager.shared.logout()
+                } label: { Text("Logout") }
+                .disabled(!AuthManager.shared.isAuthenticated)
             }
         }
         .navigationTitle("Account Login")
