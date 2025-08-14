@@ -185,15 +185,11 @@ final class AuthManager: ObservableObject {
         
         logger.info("Both files downloaded successfully")
 
-        // Persist downloads into app Documents before import
-        let (p12LocalURL, mpLocalURL) = try persistDownloadedCertificateFiles(p12TempURL: p12TempURL, mpTempURL: mpTempURL)
-        logger.info("Files persisted locally: P12=\(p12LocalURL.path), MP=\(mpLocalURL.path)")
-
-        // Robust import with verification and fallbacks using locally persisted files
+        // Import certificates directly from temporary files (no persistent saving)
         logger.info("Starting certificate import process...")
         try await robustImportCertificate(
-            p12TempURL: p12LocalURL,
-            mpTempURL: mpLocalURL,
+            p12TempURL: p12TempURL,
+            mpTempURL: mpTempURL,
             password: certInfo.p12_pass,
             certificateName: self.currentUserEmail ?? "Baba Cert"
         )
@@ -308,25 +304,7 @@ final class AuthManager: ObservableObject {
         }
     }
 
-    private func persistDownloadedCertificateFiles(p12TempURL: URL, mpTempURL: URL) throws -> (URL, URL) {
-        // Use app's shared Documents directory (visible in Files app as "Baba App")
-        let sharedDocsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-        let certificatesDir = sharedDocsURL.appendingPathComponent("Certificates", isDirectory: true)
-        try? FileManager.default.createDirectory(at: certificatesDir, withIntermediateDirectories: true)
-        
-        let timestamp = Int(Date().timeIntervalSince1970)
-        let p12Dest = certificatesDir.appendingPathComponent("downloaded_\(timestamp).p12")
-        let mpDest  = certificatesDir.appendingPathComponent("downloaded_\(timestamp).mobileprovision")
-        
-        // Overwrite if exists
-        try? FileManager.default.removeItem(at: p12Dest)
-        try? FileManager.default.removeItem(at: mpDest)
-        try FileManager.default.copyItem(at: p12TempURL, to: p12Dest)
-        try FileManager.default.copyItem(at: mpTempURL, to: mpDest)
-        
-        logger.info("Files saved to shared Documents/Certificates: \(certificatesDir.path)")
-        return (p12Dest, mpDest)
-    }
+
 
     // MARK: - Robust Certificate Import
     private func robustImportCertificate(p12TempURL: URL, mpTempURL: URL, password: String, certificateName: String) async throws {
@@ -412,32 +390,9 @@ final class AuthManager: ObservableObject {
             logger.error("URL scheme fallback failed: \(error.localizedDescription)")
         }
 
-        // 4) Final fallback: files are already in shared Documents/Certificates for manual access
-        logger.info("Files are saved in shared Documents/Certificates for manual import")
-        
-        // Store certificate info for manual import later
-        UserDefaults.standard.set(p12TempURL.path, forKey: "pendingCertP12Path")
-        UserDefaults.standard.set(mpTempURL.path, forKey: "pendingCertMPPath")
-        UserDefaults.standard.set(password, forKey: "pendingCertPassword")
-        UserDefaults.standard.set(certificateName, forKey: "pendingCertName")
-        
-        await MainActor.run {
-            let alert = UIAlertController(
-                title: .localized("Certificate Downloaded"),
-                message: .localized("Certificate files are saved. Would you like to import them manually now?"),
-                preferredStyle: .alert
-            )
-            
-            alert.addAction(UIAlertAction(title: .localized("Import Now"), style: .default) { _ in
-                NotificationCenter.default.post(name: Notification.Name("ShowCertificatesView"), object: nil)
-            })
-            
-            alert.addAction(UIAlertAction(title: .localized("Later"), style: .cancel))
-            
-            if let topVC = UIApplication.shared.windows.first?.rootViewController {
-                topVC.present(alert, animated: true)
-            }
-        }
+        // 4) Final fallback: if all methods fail, throw error
+        logger.error("All certificate import methods failed")
+        throw AuthError.downloadFailed
     }
 }
 

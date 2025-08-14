@@ -9,6 +9,7 @@ import SwiftUI
 import NimbleViews
 
 struct LoginView: View {
+    @ObservedObject private var authManager = AuthManager.shared
     @State private var email: String = ""
     @State private var password: String = ""
     @State private var apiBaseURL: String = UserDefaults.standard.string(forKey: "Feather.apiBaseURL") ?? "http://localhost:4000"
@@ -17,41 +18,75 @@ struct LoginView: View {
 
     var body: some View {
         Form {
-            Section("Account") {
-                TextField("Email", text: $email)
-                    .keyboardType(.emailAddress)
-                    .textContentType(.username)
-                    .autocapitalization(.none)
-                SecureField("Password", text: $password)
-                    .textContentType(.password)
-            }
-
-            Section("Server") {
-                TextField("API Base URL", text: $apiBaseURL)
-                    .autocapitalization(.none)
-                    .textContentType(.URL)
-            }
-
-            if let errorMessage {
+            if authManager.isAuthenticated {
+                // User is logged in - show account info and logout option
+                Section("Account") {
+                    HStack {
+                        Text("Email")
+                        Spacer()
+                        Text(authManager.currentUserEmail ?? "Unknown")
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    HStack {
+                        Text("Status")
+                        Spacer()
+                        Text("Signed In")
+                            .foregroundColor(.green)
+                    }
+                }
+                
+                Section("Server") {
+                    HStack {
+                        Text("API Base URL")
+                        Spacer()
+                        Text(authManager.apiBaseURL.absoluteString)
+                            .foregroundColor(.secondary)
+                            .font(.caption)
+                    }
+                }
+                
                 Section {
-                    Text(errorMessage)
-                        .foregroundColor(.red)
-                        .font(.footnote)
+                    Button(role: .destructive) {
+                        authManager.logout()
+                    } label: {
+                        Text("Sign Out")
+                    }
                 }
-            }
+            } else {
+                // User is not logged in - show login form
+                Section("Account") {
+                    TextField("Email", text: $email)
+                        .keyboardType(.emailAddress)
+                        .textContentType(.username)
+                        .autocapitalization(.none)
+                    SecureField("Password", text: $password)
+                        .textContentType(.password)
+                }
 
-            Section {
-                Button(action: onLogin) {
-                    if isLoading { ProgressView() } else { Text("Login") }
+                Section("Server") {
+                    TextField("API Base URL", text: $apiBaseURL)
+                        .autocapitalization(.none)
+                        .textContentType(.URL)
                 }
-                .disabled(isLoading || email.isEmpty || password.isEmpty)
-                Button(role: .destructive) {
-                    AuthManager.shared.logout()
-                } label: { Text("Logout") }
-                .disabled(!AuthManager.shared.isAuthenticated)
+
+                if let errorMessage {
+                    Section {
+                        Text(errorMessage)
+                            .foregroundColor(.red)
+                            .font(.footnote)
+                    }
+                }
+
+                Section {
+                    Button(action: onLogin) {
+                        if isLoading { ProgressView() } else { Text("Sign In") }
+                    }
+                    .disabled(isLoading || email.isEmpty || password.isEmpty)
+                }
             }
         }
-        .navigationTitle("Account Login")
+        .navigationTitle("Account")
     }
 
     private func onLogin() {
@@ -61,8 +96,7 @@ struct LoginView: View {
             do {
                 AuthManager.shared.setApiBaseURL(apiBaseURL)
                 try await AuthManager.shared.login(email: email, password: password)
-                // After successful login, fetch and install certificate pair
-                do { try await AuthManager.shared.fetchCertificateAndInstall() } catch { /* ignore if not assigned */ }
+                // Certificate fetch is already handled in AuthManager.login()
                 await MainActor.run { isLoading = false }
             } catch {
                 await MainActor.run {
