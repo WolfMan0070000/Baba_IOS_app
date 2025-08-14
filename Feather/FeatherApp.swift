@@ -16,21 +16,32 @@ struct FeatherApp: App {
 	let heartbeat = HeartbeatManager.shared
 	
 	@StateObject var downloadManager = DownloadManager.shared
+    @StateObject var authManager = AuthManager.shared
     let storage = Storage.shared
     @AppStorage("Feather.appLanguage") private var appLanguage: String = "fa"
+    @AppStorage("Feather.hasSeenWelcome") private var hasSeenWelcome: Bool = false
+    
 	var body: some Scene {
 		WindowGroup {
-			VStack {
-				DownloadHeaderView(downloadManager: downloadManager)
-					.transition(.move(edge: .top).combined(with: .opacity))
-				VariedTabbarView()
-					.environment(\.managedObjectContext, storage.context)
-					.environment(\.locale, .init(identifier: appLanguage))
-					.onOpenURL(perform: _handleURL)
-					.transition(.move(edge: .top).combined(with: .opacity))
-					.tint(AppTheme.primary)
-			}
-			.animation(.smooth, value: downloadManager.manualDownloads.description)
+            Group {
+                if !hasSeenWelcome && !authManager.isAuthenticated {
+                    // First time user - show welcome screen
+                    WelcomeView()
+                } else {
+                    // Normal app flow
+                    VStack {
+                        DownloadHeaderView(downloadManager: downloadManager)
+                            .transition(.move(edge: .top).combined(with: .opacity))
+                        VariedTabbarView()
+                            .environment(\.managedObjectContext, storage.context)
+                            .environment(\.locale, .init(identifier: appLanguage))
+                            .onOpenURL(perform: _handleURL)
+                            .transition(.move(edge: .top).combined(with: .opacity))
+                            .tint(AppTheme.primary)
+                    }
+                    .animation(.smooth, value: downloadManager.manualDownloads.description)
+                }
+            }
 			.onReceive(NotificationCenter.default.publisher(for: .heartbeatInvalidHost)) { _ in
 				DispatchQueue.main.async {
 					UIAlertController.showAlertWithOk(
