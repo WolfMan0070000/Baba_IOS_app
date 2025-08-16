@@ -170,10 +170,10 @@ class DownloadManager: NSObject, ObservableObject {
         // Mark as paused and cancel by producing resume data
         download.state = .paused
         (download.task as? URLSessionDownloadTask)?.cancel(byProducingResumeData: { resumeDataOrNil in
-            // Store resume data then process queue for next item
+            // Store resume data but DON'T process queue - keep everything paused
             DispatchQueue.main.async {
                 download.resumeData = resumeDataOrNil
-                self.processQueue()
+                // Don't call processQueue() here - let user manually resume
             }
         })
     }
