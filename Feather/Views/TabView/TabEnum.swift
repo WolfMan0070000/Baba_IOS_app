@@ -12,6 +12,7 @@ enum TabEnum: String, CaseIterable, Hashable {
     case home
     case sources
 	case library
+	case downloads
 	case settings
 	case certificates
 	
@@ -20,6 +21,7 @@ enum TabEnum: String, CaseIterable, Hashable {
         case .home:        	return .localized("Home")
         case .sources:     	return .localized("Sources")
 		case .library: 		return .localized("Library")
+		case .downloads: 	return .localized("Downloads")
 		case .settings: 	return .localized("Settings")
 		case .certificates:	return .localized("Certificates")
 		}
@@ -30,6 +32,7 @@ enum TabEnum: String, CaseIterable, Hashable {
         case .home:        	return "house"
         case .sources: 		return "globe.desk"
 		case .library: 		return "square.grid.2x2"
+		case .downloads: 	return "arrow.down.circle"
 		case .settings: 	return "gearshape.2"
 		case .certificates: return "person.text.rectangle"
 		}
@@ -41,6 +44,7 @@ enum TabEnum: String, CaseIterable, Hashable {
         case .home: HomeView()
         case .sources: SourcesView()
 		case .library: LibraryView()
+		case .downloads: DownloadsView()
 		case .settings: SettingsView()
 		case .certificates: NBNavigationView(.localized("Certificates")) { CertificatesView() }
 		}
@@ -51,6 +55,7 @@ enum TabEnum: String, CaseIterable, Hashable {
             .home,
             .sources,
 			.library,
+			.downloads,
 			.settings
 		]
 	}

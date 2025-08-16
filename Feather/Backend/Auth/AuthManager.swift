@@ -30,15 +30,18 @@ final class AuthManager: ObservableObject {
         self.currentUserEmail = try? KeychainHelper.shared.read(service: emailService).flatMap { String(data: $0, encoding: .utf8) }
     }
 
-    var apiBaseURL: URL {
-        let stored = UserDefaults.standard.string(forKey: apiBaseURLKey)
+    @Published private(set) var apiBaseURL: URL = {
+        let stored = UserDefaults.standard.string(forKey: "Feather.apiBaseURL")
         if let stored, let url = URL(string: stored) { return url }
         // Default to localhost; user can override in Settings → Server & SSL
         return URL(string: "http://localhost:4000")!
-    }
+    }()
 
     func setApiBaseURL(_ urlString: String) {
         UserDefaults.standard.set(urlString, forKey: apiBaseURLKey)
+        if let url = URL(string: urlString) {
+            self.apiBaseURL = url
+        }
     }
 
     // MARK: - Models

@@ -10,6 +10,7 @@ import SwiftUI
 struct TabbarView: View {
 	@AppStorage("Feather.appLanguage") private var _appLanguage: String = "en" // observe language changes
 	@State private var selectedTab: TabEnum = .sources
+	@ObservedObject private var downloadManager = DownloadManager.shared
 
 	var body: some View {
 		TabView(selection: $selectedTab) {
@@ -19,6 +20,7 @@ struct TabbarView: View {
 						Label(tab.title, systemImage: tab.icon)
 					}
 					.tag(tab)
+					.badge(tab == .downloads ? downloadManager.downloads.count : 0)
 			}
 		}
 		.id(_appLanguage) // recreate TabView when language changes to refresh tab titles
