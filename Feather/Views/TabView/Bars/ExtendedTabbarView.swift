@@ -15,6 +15,7 @@ struct ExtendedTabbarView: View {
 	@AppStorage("Feather.tabCustomization") var customization = TabViewCustomization()
 	@StateObject var viewModel = SourcesViewModel.shared
 	@AppStorage("Feather.appLanguage") private var _appLanguage: String = "en"
+	@ObservedObject private var downloadManager = DownloadManager.shared
 	
 	@State private var _isAddingPresenting = false
 	
@@ -30,6 +31,7 @@ struct ExtendedTabbarView: View {
 				Tab(tab.title, systemImage: tab.icon) {
 					TabEnum.view(for: tab)
 				}
+				.badge(tab == .downloads ? downloadManager.downloads.count : 0)
 			}
 			
 			ForEach(TabEnum.customizableTabs, id: \.hashValue) { tab in
