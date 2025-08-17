@@ -152,8 +152,7 @@ struct DownloadsView: View {
 struct DownloadRowView: View {
     @ObservedObject var download: Download
     @ObservedObject private var downloadManager = DownloadManager.shared
-    @State private var isExpanded = false
-    
+    @State private var isExp
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             // Header with app info and controls
@@ -206,8 +205,8 @@ struct DownloadRowView: View {
                     }
                 }
                 
-                // Expandable details
-                if isExpanded {
+                // Expandable details - only show for active downloads
+                if isExpanded && !download.isCompleted {
                     expandedDetails
                 }
             }
@@ -215,8 +214,8 @@ struct DownloadRowView: View {
         .padding(.vertical, 4)
         .contentShape(Rectangle())
         .onTapGesture {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                isExpanded.toggle()
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isExpanded.toggle()
             }
         }
     }
@@ -224,17 +223,6 @@ struct DownloadRowView: View {
     private var expandedDetails: some View {
         VStack(alignment: .leading, spacing: 8) {
             Divider()
-            
-            VStack(alignment: .leading, spacing: 4) {
-                DetailRow(title: localizedString("Download ID"), value: String(download.id.prefix(8)) + "...")
-                DetailRow(title: localizedString("URL"), value: download.url.host ?? download.url.absoluteString)
-                
-                if download.onlyArchiving {
-                    DetailRow(title: localizedString("Type"), value: localizedString("Archive Only"))
-                } else {
-                    DetailRow(title: localizedString("Type"), value: localizedString("Download & Install"))
-                }
-            }
             
             // Action buttons
             HStack(spacing: 12) {
@@ -248,17 +236,6 @@ struct DownloadRowView: View {
                 .buttonStyle(PlainButtonStyle())
                 
                 Spacer()
-                
-                if let url = download.task?.originalRequest?.url {
-                    Button(action: {
-                        UIPasteboard.general.string = url.absoluteString
-                    }) {
-                        Label(localizedString("Copy URL"), systemImage: "doc.on.doc")
-                            .font(.caption)
-                            .foregroundColor(.blue)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                }
             }
         }
     }
@@ -380,20 +357,8 @@ struct DownloadRowView: View {
     private func localizedString(_ key: String) -> String {
         let lang = UserDefaults.standard.string(forKey: "Feather.appLanguage") ?? "en"
         switch key {
-        case "Download ID":
-            return lang == "fa" ? "شناسه دانلود" : "Download ID"
-        case "URL":
-            return lang == "fa" ? "آدرس" : "URL"
-        case "Type":
-            return lang == "fa" ? "نوع" : "Type"
-        case "Archive Only":
-            return lang == "fa" ? "فقط آرشیو" : "Archive Only"
-        case "Download & Install":
-            return lang == "fa" ? "دانلود و نصب" : "Download & Install"
         case "Cancel":
             return lang == "fa" ? "لغو" : "Cancel"
-        case "Copy URL":
-            return lang == "fa" ? "کپی آدرس" : "Copy URL"
         case "Preparing...":
             return lang == "fa" ? "در حال آماده‌سازی..." : "Preparing..."
         case "Downloading...":
