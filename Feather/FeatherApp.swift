@@ -18,7 +18,7 @@ struct FeatherApp: App {
 	@StateObject var downloadManager = DownloadManager.shared
     @StateObject var authManager = AuthManager.shared
     let storage = Storage.shared
-    @AppStorage("Feather.appLanguage") private var appLanguage: String = "fa"
+    @AppStorage("Feather.appLanguage") private var appLanguage: String = "en"
     @AppStorage("Feather.hasSeenWelcome") private var hasSeenWelcome: Bool = false
     
 	var body: some Scene {

@@ -13,8 +13,18 @@ extension String {
 	// was given permission to use any code from antoine as I like - thank you Serena!~
 	
     static public func localized(_ name: String) -> String {
-        // اپ باید زبان انتخابی کاربر را رعایت کند (پشتیبانی از فارسی)
-        let languageCode = UserDefaults.standard.string(forKey: "Feather.appLanguage") ?? Locale.preferredLanguages.first ?? "fa"
+        // Get the user's preferred language, with fallback to device language
+        var languageCode = UserDefaults.standard.string(forKey: "Feather.appLanguage")
+        
+        // If no language is set, initialize with device language
+        if languageCode == nil {
+            let deviceLanguage = Locale.preferredLanguages.first ?? "en"
+            // Only use device language if it's supported
+            let supportedLanguages = ["en", "fa", "tr", "id", "vi", "cs", "de", "es", "fr", "ru"]
+            languageCode = supportedLanguages.contains(deviceLanguage) ? deviceLanguage : "en"
+            UserDefaults.standard.set(languageCode, forKey: "Feather.appLanguage")
+        }
+        
         if let bundlePath = Bundle.main.path(forResource: languageCode, ofType: "lproj"),
            let bundle = Bundle(path: bundlePath) {
             return NSLocalizedString(name, tableName: nil, bundle: bundle, value: name, comment: "")
@@ -23,7 +33,16 @@ extension String {
     }
     
     static public func localized(_ name: String, arguments: CVarArg...) -> String {
-        let languageCode = UserDefaults.standard.string(forKey: "Feather.appLanguage") ?? Locale.preferredLanguages.first ?? "fa"
+        var languageCode = UserDefaults.standard.string(forKey: "Feather.appLanguage")
+        
+        // If no language is set, initialize with device language
+        if languageCode == nil {
+            let deviceLanguage = Locale.preferredLanguages.first ?? "en"
+            let supportedLanguages = ["en", "fa", "tr", "id", "vi", "cs", "de", "es", "fr", "ru"]
+            languageCode = supportedLanguages.contains(deviceLanguage) ? deviceLanguage : "en"
+            UserDefaults.standard.set(languageCode, forKey: "Feather.appLanguage")
+        }
+        
         let bundle: Bundle = {
             if let path = Bundle.main.path(forResource: languageCode, ofType: "lproj"),
                let langBundle = Bundle(path: path) {

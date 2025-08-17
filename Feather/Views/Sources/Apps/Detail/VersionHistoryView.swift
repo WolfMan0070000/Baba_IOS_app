@@ -38,11 +38,7 @@ struct VersionHistoryView: View {
                                 Label(version.version, systemImage: "arrow.down")
                             }
                             
-                            Button {
-                                UIPasteboard.general.string = downloadURL.absoluteString
-                            } label: {
-                                Label(.localized("Copy Download URL"), systemImage: "doc.on.clipboard")
-                            }
+
                         }
                     }
                     
