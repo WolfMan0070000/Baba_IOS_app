@@ -20,7 +20,7 @@ struct TabbarView: View {
 						Label(tab.title, systemImage: tab.icon)
 					}
 					.tag(tab)
-					.badge(tab == .downloads ? downloadManager.downloads.count : 0)
+					.badge(tab == .downloads ? downloadManager.downloads.filter { !$0.isCompleted }.count : 0)
 			}
 		}
 		.id(_appLanguage) // recreate TabView when language changes to refresh tab titles
