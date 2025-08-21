@@ -139,7 +139,7 @@ struct FeatherApp: App {
 				let fullPath = url.validatedScheme(after: "/install/"),
 				let downloadURL = URL(string: fullPath)
 			{
-				_ = DownloadManager.shared.startDownload(from: downloadURL)
+				_ = DownloadManager.shared.startDownload(from: downloadURL, id: "FeatherManualDownload_\(UUID().uuidString)")
 			}
 		} else {
 			if url.pathExtension == "ipa" || url.pathExtension == "tipa" {
@@ -166,6 +166,17 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         ResetView.clearWorkCache()
 		return true
 	}
+    
+    // MARK: - Background Session Handling
+    func application(_ application: UIApplication, handleEventsForBackgroundURLSession identifier: String, completionHandler: @escaping () -> Void) {
+        print("Background session events received for identifier: \(identifier)")
+        
+        // Store completion handler for later use
+        if identifier == "Feather.DownloadManager.BackgroundSession" {
+            // The DownloadManager will handle the completion
+            completionHandler()
+        }
+    }
 	
 	private func _createPipeline() {
 		DataLoader.sharedUrlCache.diskCapacity = 0

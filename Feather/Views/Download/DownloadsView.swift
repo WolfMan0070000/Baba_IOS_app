@@ -152,7 +152,8 @@ struct DownloadsView: View {
 struct DownloadRowView: View {
     @ObservedObject var download: Download
     @ObservedObject private var downloadManager = DownloadManager.shared
-    @State private var isExp
+    @State private var isExpanded = false
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             // Header with app info and controls
