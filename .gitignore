@@ -4,3 +4,18 @@ Payload
 *UserInterfaceState.xcuserstate
 xcuserdata/
 deps
+
+# Large files and archives
+*.zip
+*.tar.gz
+*.rar
+*.7z
+*.dmg
+*.pkg
+
+# Files larger than 50MB
+*.ipa
+*.app
+
+# Temporary files
+._*
