@@ -129,7 +129,7 @@ struct AppDetailView: View {
                 // Badges
                 HStack(spacing: 8) {
                     if app.isNew == true {
-                        Text("NEW")
+                        Text(.localized("NEW"))
                             .font(.caption2.weight(.semibold))
                             .foregroundColor(.white)
                             .padding(.horizontal, 6)
@@ -139,7 +139,7 @@ struct AppDetailView: View {
                     }
                     
                     if app.isFeatured == true {
-                        Text("FEATURED")
+                        Text(.localized("FEATURED"))
                             .font(.caption2.weight(.semibold))
                             .foregroundColor(.white)
                             .padding(.horizontal, 6)
@@ -156,7 +156,7 @@ struct AppDetailView: View {
     
     private func screenshotsSection(_ screenshots: [String]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Screenshots")
+            Text(.localized("Screenshots"))
                 .font(.headline)
             
             ScrollView(.horizontal, showsIndicators: false) {
@@ -191,7 +191,7 @@ struct AppDetailView: View {
     
     private func descriptionSection(_ description: String) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("About")
+            Text(.localized("About"))
                 .font(.headline)
             
             Text(description)
@@ -202,20 +202,20 @@ struct AppDetailView: View {
     
     private var informationSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Information")
+            Text(.localized("Information"))
                 .font(.headline)
             
             VStack(spacing: 12) {
-                InfoRow(title: "Version", value: app.version)
+                InfoRow(title: .localized("Version"), value: app.version)
                 
                 if let size = app.size {
-                    InfoRow(title: "Size", value: size)
+                    InfoRow(title: .localized("Size"), value: size)
                 }
                 
-                InfoRow(title: "Bundle ID", value: app.bundleIdentifier)
+                InfoRow(title: .localized("Bundle ID"), value: app.bundleIdentifier)
                 
                 if let category = app.category {
-                    InfoRow(title: "Category", value: category.displayName)
+                    InfoRow(title: .localized("Category"), value: category.displayName)
                 }
             }
         }

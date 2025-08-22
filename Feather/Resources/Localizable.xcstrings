@@ -451,13 +451,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "About Baba App "
+            "value" : "About Baba Apps "
           }
         },
         "fa" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "درباره برنامه بابا"
+            "value" : "درباره بابا اپساپس‌"
           }
         }
       }
@@ -1100,7 +1100,7 @@
         "fa" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "برنامه بابا"
+            "value" : "بابا اپس"
           }
         }
       }
@@ -4232,7 +4232,20 @@
       }
     },
     "Information" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Information"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اطلاعات"
+          }
+        }
+      }
     },
     "Injection Folder" : {
       "extractionState" : "manual",
@@ -6673,7 +6686,20 @@
       }
     },
     "Screenshots" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Screenshots"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تصاویر"
+          }
+        }
+      }
     },
     "See all apps from your sources" : {
       "comment" : "All repositories description",
@@ -8534,7 +8560,20 @@
       }
     },
     "Welcome to Baba App" : {
-
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Welcome to Baba App"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "به اپلیکیشن بابا اپس خوش آمدید"
+          }
+        }
+      }
     },
     "You cannot update '%@' with itself, please use an alternative tool to update it." : {
       "extractionState" : "manual",
@@ -8577,10 +8616,164 @@
       }
     },
     "بستن" : {
-
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بستن"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close"
+          }
+        }
+      }
     },
     "دسته‌بندی" : {
-
+      "localizations" : {
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "دسته‌بندی"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Category"
+          }
+        }
+      }
+    },
+    "Size" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Size"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حجم"
+          }
+        }
+      }
+    },
+    "Bundle ID" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bundle ID"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "شناسه بسته"
+          }
+        }
+      }
+    },
+    "Category" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Category"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "دسته‌بندی"
+          }
+        }
+      }
+    },
+    "NEW" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "NEW"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جدید"
+          }
+        }
+      }
+    },
+    "FEATURED" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FEATURED"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ویژه"
+          }
+        }
+      }
+    },
+    "Import completed successfully" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import completed successfully"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وارد کردن با موفقیت تکمیل شد"
+          }
+        }
+      }
+    },
+    "Import failed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import failed"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وارد کردن ناموفق بود"
+          }
+        }
+      }
+    },
+    "Baba App" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Baba Apps"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بابااپس"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

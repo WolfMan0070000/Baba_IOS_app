@@ -20,7 +20,7 @@ struct AboutView: View {
 					VStack {
                         Image(uiImage: AppIconView.altImage(UIApplication.shared.alternateIconName))
 							.appIconStyle(size: 72)
-                        Text("Baba App")
+                        Text(.localized("Baba Apps"))
 							.font(.largeTitle)
 							.bold()
                             .foregroundStyle(Color.accentColor)

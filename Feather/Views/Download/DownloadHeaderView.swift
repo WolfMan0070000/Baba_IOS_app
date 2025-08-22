@@ -69,11 +69,11 @@ struct DownloadItemView: View {
 			}
 			
 			if download.state == .completed {
-				Text("Import completed successfully")
+				Text(.localized("Import completed successfully"))
 					.font(.caption)
 					.foregroundColor(.green)
 			} else if download.state == .failed {
-				Text(download.errorMessage ?? "Import failed")
+				Text(download.errorMessage ?? .localized("Import failed"))
 					.font(.caption)
 					.foregroundColor(.red)
 			} else {
