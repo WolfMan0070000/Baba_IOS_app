@@ -41,7 +41,12 @@ struct DownloadButtonView: View {
 			} else {
 				Button {
 					if let url = app.currentDownloadUrl {
-						_ = downloadManager.startDownload(from: url, id: app.currentUniqueId)
+						let downloadResult = downloadManager.startDownload(from: url, id: app.currentUniqueId)
+						if downloadResult == nil {
+							// Download was blocked (already completed)
+							print("Download blocked: App already downloaded")
+							// You could show an alert here if needed
+						}
 					}
 				} label: {
 					Text(.localized("Get"))

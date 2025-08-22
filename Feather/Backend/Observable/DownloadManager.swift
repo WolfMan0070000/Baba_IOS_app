@@ -249,9 +249,18 @@ class DownloadManager: NSObject, ObservableObject {
             if let download = Download.fromDictionary(downloadDict) {
                 // Only restore non-completed downloads
                 if !download.isCompleted {
-                    internalDownloads.append(download)
-                    if download.state == .waiting {
-                        downloadQueue.append(download)
+                    // Additional safety: Check if we already have a completed download for this URL
+                    let hasCompletedVersion = internalDownloads.contains { existingDownload in
+                        existingDownload.url == download.url && existingDownload.isCompleted
+                    }
+                    
+                    if !hasCompletedVersion {
+                        internalDownloads.append(download)
+                        if download.state == .waiting {
+                            downloadQueue.append(download)
+                        }
+                    } else {
+                        print("Skipping persisted download - already have completed version: \(download.fileName)")
                     }
                 }
             }
@@ -263,7 +272,7 @@ class DownloadManager: NSObject, ObservableObject {
     func startDownload(
 		from url: URL,
 		id: String = UUID().uuidString
-	) -> Download {
+	) -> Download? { // Changed return type to optional
         print("Starting download for URL: \(url.lastPathComponent)")
         
         // Check if download already exists and is not completed
@@ -272,10 +281,10 @@ class DownloadManager: NSObject, ObservableObject {
             return existingDownload
         }
         
-        // Check if download was completed before
+        // CRITICAL: Check if download was completed before - PREVENT re-download
         if let completedDownload = internalDownloads.first(where: { $0.url == url && $0.isCompleted }) {
-            print("Download already completed for URL: \(url.lastPathComponent)")
-            return completedDownload
+            print("WARNING: Attempted to re-download already completed file: \(url.lastPathComponent). Request blocked.")
+            return nil // Return nil to indicate download was blocked
         }
         
 		let download = Download(id: id, url: url)
@@ -350,9 +359,26 @@ class DownloadManager: NSObject, ObservableObject {
             return
         }
         
+        // Additional safety: double-check isCompleted flag
+        if download.isCompleted {
+            print("Cannot resume download marked as completed: \(download.fileName)")
+            return
+        }
+        
         if download.state == .downloading && download.task?.state == .running {
             print("Download already running: \(download.fileName)")
             return
+        }
+        
+        // If download failed, reset its state for retry
+        if download.state == .failed {
+            download.state = .waiting
+            download.errorMessage = nil
+            download.task = nil
+            download.resumeData = nil
+            download.progress = 0.0
+            download.bytesDownloaded = 0
+            download.isCompleted = false
         }
         
         // If it's in queue, move it to front
@@ -428,6 +454,16 @@ class DownloadManager: NSObject, ObservableObject {
 	func getDownloadTask(by task: URLSessionDownloadTask) -> Download? {
 		return internalDownloads.first(where: { $0.task == task })
 	}
+	
+	// Helper method to get completed downloads that need user attention
+	var completedDownloadsCount: Int {
+		return internalDownloads.filter { $0.isCompleted }.count
+	}
+	
+	// Helper method to check if there are completed downloads ready for installation
+	var hasCompletedDownloads: Bool {
+		return completedDownloadsCount > 0
+	}
     
     // MARK: - Cleanup
     func cleanupCompletedDownloads() {
@@ -483,15 +519,6 @@ extension DownloadManager: URLSessionDownloadDelegate {
 					self.processQueue()
 					
 					self.saveDownloads()
-					
-					// Auto-remove failed download after 5 seconds
-					DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
-						if let index = self.internalDownloads.firstIndex(where: { $0.id == dl.id }) {
-							self.internalDownloads.remove(at: index)
-							self.saveDownloads()
-							self.notifyDownloadsChanged()
-						}
-					}
 				} else {
 					print("Package file handling completed successfully: \(dl.fileName)")
 					// Mark as completed
@@ -514,15 +541,6 @@ extension DownloadManager: URLSessionDownloadDelegate {
 					generator.notificationOccurred(.success)
 					
 					self.saveDownloads()
-					
-					// Auto-remove completed download after 3 seconds
-					DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-						if let index = self.internalDownloads.firstIndex(where: { $0.id == dl.id }) {
-							self.internalDownloads.remove(at: index)
-							self.saveDownloads()
-							self.notifyDownloadsChanged()
-						}
-					}
 				}
 			}
 		}

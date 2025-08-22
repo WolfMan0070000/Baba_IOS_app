@@ -374,7 +374,11 @@ struct AppDetailView: View {
         // Start new download
         if let url = URL(string: app.ipaUrl) {
             let downloadId = "BabaApp_\(app.bundleIdentifier)_\(app.id)"
-            _ = downloadManager.startDownload(from: url, id: downloadId)
+            let downloadResult = downloadManager.startDownload(from: url, id: downloadId)
+            if downloadResult == nil {
+                print("Download blocked: App already completed")
+                // The UI should update automatically to show completed state
+            }
         } else {
             // Fallback: try to add as source if no direct download
             let sourceUrl = "https://example.com/\(app.bundleIdentifier).json" // This should come from backend

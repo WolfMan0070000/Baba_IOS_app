@@ -210,13 +210,18 @@ struct DownloadRowView: View {
                 if isExpanded && !download.isCompleted {
                     expandedDetails
                 }
+                
+                // Hint for completed downloads
+                if download.isCompleted {
+                    completedDownloadHint
+                }
             }
         }
         .padding(.vertical, 4)
         .contentShape(Rectangle())
         .onTapGesture {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    isExpanded.toggle()
+            withAnimation(.easeInOut(duration: 0.2)) {
+                isExpanded.toggle()
             }
         }
     }
@@ -227,6 +232,17 @@ struct DownloadRowView: View {
             
             // Action buttons
             HStack(spacing: 12) {
+                if download.state == .failed {
+                    Button(action: {
+                        downloadManager.resumeDownload(download)
+                    }) {
+                        Label(localizedString("Retry"), systemImage: "arrow.clockwise")
+                            .font(.caption)
+                            .foregroundColor(.blue)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+                
                 Button(action: {
                     downloadManager.cancelDownload(download)
                 }) {
@@ -241,6 +257,42 @@ struct DownloadRowView: View {
         }
     }
     
+    private var completedDownloadHint: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if isExpanded {
+                Divider()
+                
+                HStack(spacing: 12) {
+                    Image(systemName: "info.circle.fill")
+                        .foregroundColor(.blue)
+                        .font(.title3)
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(localizedString("Download Complete!"))
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.primary)
+                        
+                        Text(localizedString("Go to Library to sign and install this file"))
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    
+                    Spacer()
+                    
+                    Image(systemName: "arrow.right")
+                        .foregroundColor(.blue)
+                        .font(.caption2)
+                }
+                .padding(.vertical, 8)
+                .padding(.horizontal, 12)
+                .background(Color.blue.opacity(0.1))
+                .cornerRadius(8)
+            }
+        }
+    }
+    
     private var downloadControlButton: some View {
         Button(action: toggleDownload) {
             Image(systemName: downloadControlIcon)
@@ -248,6 +300,7 @@ struct DownloadRowView: View {
                 .foregroundColor(downloadControlColor)
         }
         .buttonStyle(PlainButtonStyle())
+        .disabled(download.state == .completed) // Disable button for completed downloads
     }
     
     private var downloadControlIcon: String {
@@ -261,7 +314,7 @@ struct DownloadRowView: View {
         case .completed:
             return "checkmark.circle.fill"
         case .failed:
-            return "xmark.circle.fill"
+            return "arrow.clockwise.circle.fill" // Changed to retry icon for failed downloads
         }
     }
     
@@ -276,7 +329,7 @@ struct DownloadRowView: View {
         case .completed:
             return .green
         case .failed:
-            return .red
+            return .blue // Changed to blue for retry indication
         }
     }
     
@@ -291,7 +344,11 @@ struct DownloadRowView: View {
         case .completed:
             return localizedString("Completed")
         case .failed:
-            return localizedString("Failed")
+            if let errorMessage = download.errorMessage {
+                return "\(localizedString("Failed")): \(errorMessage)"
+            } else {
+                return localizedString("Failed")
+            }
         }
     }
     
@@ -360,6 +417,10 @@ struct DownloadRowView: View {
         switch key {
         case "Cancel":
             return lang == "fa" ? "لغو" : "Cancel"
+        case "Retry":
+            return lang == "fa" ? "تلاش مجدد" : "Retry"
+        case "Waiting":
+            return lang == "fa" ? "در انتظار" : "Waiting"
         case "Preparing...":
             return lang == "fa" ? "در حال آماده‌سازی..." : "Preparing..."
         case "Downloading...":
@@ -370,8 +431,14 @@ struct DownloadRowView: View {
             return lang == "fa" ? "در حال لغو..." : "Canceling..."
         case "Completed":
             return lang == "fa" ? "تکمیل شده" : "Completed"
+        case "Failed":
+            return lang == "fa" ? "خطا" : "Failed"
         case "Unknown":
             return lang == "fa" ? "نامشخص" : "Unknown"
+        case "Download Complete!":
+            return lang == "fa" ? "دانلود تکمیل شد!" : "Download Complete!"
+        case "Go to LIBRARY to sign and install this file":
+            return lang == "fa" ? "برای امضا و نصب فایل به کتابخانه مراجعه کنید" : "Go to Library to sign and install this file"
         default:
             return key
         }

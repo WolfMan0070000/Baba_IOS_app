@@ -29,11 +29,16 @@ struct VersionHistoryView: View {
                     .contextMenu {
                         if let downloadURL = version.downloadURL {
                             Button {
-                                _ = DownloadManager.shared.startDownload(
+                                let downloadResult = DownloadManager.shared.startDownload(
                                     from: downloadURL,
                                     id: app.currentUniqueId
                                 )
-								dismiss()
+                                if downloadResult != nil {
+                                    // Only dismiss if download was actually started
+                                    dismiss()
+                                } else {
+                                    print("Download blocked: Version already downloaded")
+                                }
                             } label: {
                                 Label(version.version, systemImage: "arrow.down")
                             }
