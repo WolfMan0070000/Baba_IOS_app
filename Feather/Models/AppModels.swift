@@ -158,3 +158,12 @@ struct HomepageSectionDTO: Decodable {
 struct PageResponse: Decodable {
     let blocks: [HomepageSectionDTO]
 }
+
+struct IOSHomepageResponse: Decodable {
+    let sections: [HomepageSectionDTO]
+    let banners: String?
+    let editorsChoice: String?
+    let personalized: String?
+    let trending: String?
+    let metadata: String?
+}

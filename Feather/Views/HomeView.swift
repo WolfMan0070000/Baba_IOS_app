@@ -208,12 +208,12 @@ struct HomeView: View {
         do {
             // Load all content from BabaApp backend
             let baseURL = authManager.apiBaseURL.absoluteString
-            async let homepageTask: PageResponse = fetchJson("\(baseURL)/api/v1/pages/homepage-layout")
+            async let homepageTask: IOSHomepageResponse = fetchJson("\(baseURL)/api/v1/pages/homepage-v2")
             async let categoriesTask: [AppCategory] = fetchJson("\(baseURL)/api/v1/categories")
             async let featuredTask: [IOSAppDTO] = fetchJson("\(baseURL)/api/v1/apps/featured")
             
             let (homepage, categoriesResponse, featuredResponse) = try await (homepageTask, categoriesTask, featuredTask)
-            let layout = homepage.blocks
+            let layout = homepage.sections
             
             // Load all apps referenced in sections
             let appIds = Array(Set(layout.compactMap({ $0.appIds }).flatMap({ $0 })))
