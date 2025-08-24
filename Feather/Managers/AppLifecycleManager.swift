@@ -18,8 +18,8 @@ class AppLifecycleManager: ObservableObject {
     private var backgroundTime: Date?
     private var cancellables = Set<AnyCancellable>()
     
-    // Threshold: If app was backgrounded for more than 5 minutes, refresh on reopen
-    private let backgroundRefreshThreshold: TimeInterval = 300 // 5 minutes
+    // Threshold: If app was backgrounded for more than 30 seconds, refresh on reopen
+    private let backgroundRefreshThreshold: TimeInterval = 30 // 30 seconds instead of 5 minutes
     
     private init() {
         setupLifecycleObservers()
@@ -95,6 +95,14 @@ class AppLifecycleManager: ObservableObject {
             }
         } else {
             print("✅ AppLifecycle: App was only backgrounded for \(Int(timeSinceBackground))s, using cached data")
+            
+            // Even for short backgrounding, still mark for refresh to ensure fresh data
+            if timeSinceBackground > 10 { // More than 10 seconds
+                print("🔄 AppLifecycle: Short background time but still refreshing for better UX")
+                DispatchQueue.main.async {
+                    self.shouldRefreshOnNextAppear = true
+                }
+            }
         }
         
         // Reset background time

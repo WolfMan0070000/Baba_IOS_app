@@ -9,7 +9,7 @@ import Foundation
 
 // MARK: - App Data Models
 
-struct IOSAppDTO: Codable, Identifiable {
+struct IOSAppDTO: Codable, Identifiable, Hashable {
     let id: Int
     let bundleIdentifier: String
     let name: String
@@ -20,7 +20,7 @@ struct IOSAppDTO: Codable, Identifiable {
     let shortDescriptionFa: String?
     let shortDescriptionEn: String?
     let iconUrl: String
-    let ipaUrl: String
+    let ipaUrl: String? // Made optional to handle null values from backend
     let screenshots: String?
     let bannerUrl: String?
     let developer: String?
@@ -112,9 +112,24 @@ struct IOSAppDTO: Codable, Identifiable {
         // Fallback: split by comma if it's a simple string
         return screenshots.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
     }
+    
+    // MARK: - Hashable Implementation
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+        hasher.combine(bundleIdentifier)
+        hasher.combine(name)
+        hasher.combine(version)
+    }
+    
+    static func == (lhs: IOSAppDTO, rhs: IOSAppDTO) -> Bool {
+        return lhs.id == rhs.id &&
+               lhs.bundleIdentifier == rhs.bundleIdentifier &&
+               lhs.name == rhs.name &&
+               lhs.version == rhs.version
+    }
 }
 
-struct AppCategory: Codable, Identifiable {
+struct AppCategory: Codable, Identifiable, Hashable {
     let id: Int
     let nameEn: String
     let nameFa: String
@@ -127,15 +142,43 @@ struct AppCategory: Codable, Identifiable {
     
     // For backward compatibility
     var name: String { nameEn }
+    
+    // MARK: - Hashable Implementation
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+        hasher.combine(nameEn)
+        hasher.combine(nameFa)
+        hasher.combine(icon)
+    }
+    
+    static func == (lhs: AppCategory, rhs: AppCategory) -> Bool {
+        return lhs.id == rhs.id &&
+               lhs.nameEn == rhs.nameEn &&
+               lhs.nameFa == rhs.nameFa &&
+               lhs.icon == rhs.icon
+    }
 }
 
-struct Review: Codable, Identifiable {
+struct Review: Codable, Identifiable, Hashable {
     let id: Int
     let rating: Double
     let comment: String?
     let userId: Int?
     let appId: Int
     let createdAt: String?
+    
+    // MARK: - Hashable Implementation
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+        hasher.combine(appId)
+        hasher.combine(rating)
+    }
+    
+    static func == (lhs: Review, rhs: Review) -> Bool {
+        return lhs.id == rhs.id &&
+               lhs.appId == rhs.appId &&
+               lhs.rating == rhs.rating
+    }
 }
 
 // MARK: - Homepage Layout Models
@@ -148,6 +191,7 @@ struct HomepageSectionDTO: Codable {
     let subtitle_fa: String?
     let subtitle_en: String?
     let appIds: [String]?
+    let categoryIds: [Int]?
     let enabled: Bool
     let order: Int
 

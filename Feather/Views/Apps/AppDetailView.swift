@@ -12,7 +12,8 @@ struct AppDetailView: View {
     let app: IOSAppDTO
     @ObservedObject private var downloadManager = DownloadManager.shared
     @Environment(\.dismiss) private var dismiss
-    @State private var selectedScreenshot: String?
+    @State private var selectedScreenshotURL: String?
+    @State private var showingScreenshotViewer = false
     
     var body: some View {
         NavigationView {
@@ -51,11 +52,10 @@ struct AppDetailView: View {
                 downloadButton
             }
         }
-        .sheet(item: Binding<ScreenshotItem?>(
-            get: { selectedScreenshot.map(ScreenshotItem.init) },
-            set: { selectedScreenshot = $0?.url }
-        )) { item in
-            ScreenshotDetailView(imageUrl: item.url)
+        .sheet(isPresented: $showingScreenshotViewer) {
+            if let imageUrl = selectedScreenshotURL {
+                ScreenshotDetailView(imageUrl: imageUrl)
+            }
         }
     }
     
@@ -180,7 +180,8 @@ struct AppDetailView: View {
                             }
                         }
                         .onTapGesture {
-                            selectedScreenshot = screenshot
+                            selectedScreenshotURL = screenshot
+                            showingScreenshotViewer = true
                         }
                     }
                 }
@@ -372,7 +373,7 @@ struct AppDetailView: View {
         }
         
         // Start new download
-        if let url = URL(string: app.ipaUrl) {
+        if let ipaUrl = app.ipaUrl, let url = URL(string: ipaUrl) {
             let downloadId = "BabaApp_\(app.bundleIdentifier)_\(app.id)"
             let downloadResult = downloadManager.startDownload(from: url, id: downloadId)
             if downloadResult == nil {
@@ -402,11 +403,6 @@ private struct InfoRow: View {
                 .fontWeight(.medium)
         }
     }
-}
-
-private struct ScreenshotItem: Identifiable {
-    let id = UUID()
-    let url: String
 }
 
 private struct ScreenshotDetailView: View {

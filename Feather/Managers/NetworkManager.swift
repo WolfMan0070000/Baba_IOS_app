@@ -72,15 +72,15 @@ class NetworkManager: ObservableObject {
         categories: [AppCategory],
         featured: [IOSAppDTO]
     ) {
-        let cacheExpiry: TimeInterval = 900 // 15 minutes - longer cache for better performance
+        let cacheExpiry: TimeInterval = 600 // Reduced to 10 minutes for more frequent updates
         
-        // Smart caching: only force refresh when explicitly requested (pull-to-refresh or app reopen)
+        // Smart caching: force refresh on initial app launch and user-triggered actions
         let shouldForceRefresh = forceRefresh
         
         if shouldForceRefresh {
-            print("🔄 NetworkManager: Force refreshing homepage data (user-triggered)")
+            print("🔄 NetworkManager: Force refreshing homepage data (bypassing all caches)")
         } else {
-            print("📦 NetworkManager: Loading homepage data (cache-first)")
+            print("📦 NetworkManager: Loading homepage data (cache-first strategy)")
         }
         
         async let homepageTask = fetchWithCache(
@@ -95,7 +95,7 @@ class NetworkManager: ObservableObject {
             "\(baseURL)/api/v1/categories",
             type: [AppCategory].self,
             cacheKey: DataCacheManager.CacheKey.categories(baseURL: baseURL),
-            cacheExpiry: cacheExpiry * 2, // Categories change less frequently - 30 minutes
+            cacheExpiry: cacheExpiry, // Same as homepage cache - 10 minutes
             forceRefresh: shouldForceRefresh
         )
         
@@ -116,7 +116,7 @@ class NetworkManager: ObservableObject {
             "\(baseURL)/api/v1/apps/\(id)",
             type: IOSAppDTO.self,
             cacheKey: DataCacheManager.CacheKey.app(id: id, baseURL: baseURL),
-            cacheExpiry: 600, // 10 minutes for individual apps
+            cacheExpiry: 300, // Reduced to 5 minutes for individual apps
             forceRefresh: forceRefresh
         )
     }
@@ -201,6 +201,18 @@ class NetworkManager: ObservableObject {
         cache.remove(key: homepageKey)
         cache.remove(key: categoriesKey)
         cache.remove(key: featuredKey)
+        
+        // Also clear URL cache for network requests
+        session.configuration.urlCache?.removeAllCachedResponses()
+        print("🧹 NetworkManager: Homepage cache cleared completely")
+    }
+    
+    func clearAllAppCaches(baseURL: String) {
+        print("🧹 NetworkManager: Clearing all app caches for \(baseURL)")
+        // Clear all cached individual apps and category apps
+        cache.clearAllCache()
+        session.configuration.urlCache?.removeAllCachedResponses()
+        print("🧹 NetworkManager: All app caches cleared")
     }
     
     func invalidateCacheOnLogin(baseURL: String) {
