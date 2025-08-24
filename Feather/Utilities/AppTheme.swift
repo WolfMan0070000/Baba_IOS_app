@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Central design system for Baba App – colors, fonts, modifiers
+/// Central design system for Baba Apps – colors, fonts, modifiers
 /// Colors are extracted from the app icon (cyan-to-blue gradient).
 public enum AppTheme {
     // MARK: Colors

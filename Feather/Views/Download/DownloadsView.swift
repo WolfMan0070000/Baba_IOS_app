@@ -19,12 +19,12 @@ struct DownloadsView: View {
                     downloadsList
                 }
             }
-            .navigationTitle(localizedString("Downloads"))
+            .navigationTitle(.localized("Downloads"))
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     if !downloadManager.downloads.isEmpty {
-                        Button(localizedString("Clear All")) {
+                        Button(.localized("Clear All")) {
                             clearAllDownloads()
                         }
                         .foregroundColor(.red)
@@ -41,10 +41,10 @@ struct DownloadsView: View {
                 .foregroundColor(.secondary)
             
             VStack(spacing: 8) {
-                Text(localizedString("No Downloads"))
+                Text(.localized("No Downloads"))
                     .font(.title2.bold())
                 
-                Text(localizedString("Your downloads will appear here"))
+                Text(.localized("Your downloads will appear here"))
                     .font(.body)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
@@ -68,7 +68,7 @@ struct DownloadsView: View {
                     }
                 } header: {
                     HStack {
-                        Text(localizedString("Active Downloads"))
+                        Text(.localized("Active Downloads"))
                         Spacer()
                         Text("\(activeDownloads.count)")
                             .foregroundColor(.secondary)
@@ -88,7 +88,7 @@ struct DownloadsView: View {
                     }
                 } header: {
                     HStack {
-                        Text(localizedString("Completed Downloads"))
+                        Text(.localized("Completed Downloads"))
                         Spacer()
                         Text("\(completedDownloads.count)")
                             .foregroundColor(.secondary)
@@ -125,26 +125,6 @@ struct DownloadsView: View {
         let downloads = downloadManager.downloads
         for download in downloads {
             downloadManager.cancelDownload(download)
-        }
-    }
-    
-    private func localizedString(_ key: String) -> String {
-        let lang = UserDefaults.standard.string(forKey: "Feather.appLanguage") ?? "en"
-        switch key {
-        case "Downloads":
-            return lang == "fa" ? "دانلودها" : "Downloads"
-        case "Clear All":
-            return lang == "fa" ? "پاک کردن همه" : "Clear All"
-        case "No Downloads":
-            return lang == "fa" ? "دانلودی وجود ندارد" : "No Downloads"
-        case "Your downloads will appear here":
-            return lang == "fa" ? "دانلودهای شما اینجا نمایش داده می‌شوند" : "Your downloads will appear here"
-        case "Active Downloads":
-            return lang == "fa" ? "دانلودهای فعال" : "Active Downloads"
-        case "Completed Downloads":
-            return lang == "fa" ? "دانلودهای تکمیل شده" : "Completed Downloads"
-        default:
-            return key
         }
     }
 }
@@ -236,7 +216,7 @@ struct DownloadRowView: View {
                     Button(action: {
                         downloadManager.resumeDownload(download)
                     }) {
-                        Label(localizedString("Retry"), systemImage: "arrow.clockwise")
+                        Label(.localized("Retry"), systemImage: "arrow.clockwise")
                             .font(.caption)
                             .foregroundColor(.blue)
                     }
@@ -246,7 +226,7 @@ struct DownloadRowView: View {
                 Button(action: {
                     downloadManager.cancelDownload(download)
                 }) {
-                    Label(localizedString("Cancel"), systemImage: "xmark.circle")
+                    Label(.localized("Cancel"), systemImage: "xmark.circle")
                         .font(.caption)
                         .foregroundColor(.red)
                 }
@@ -268,12 +248,12 @@ struct DownloadRowView: View {
                         .font(.title3)
                     
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(localizedString("Download Complete!"))
+                        Text(.localized("Download Complete!"))
                             .font(.caption)
                             .fontWeight(.semibold)
                             .foregroundColor(.primary)
                         
-                        Text(localizedString("Go to Library to sign and install this file"))
+                        Text(.localized("Go to Library to sign and install this file"))
                             .font(.caption2)
                             .foregroundColor(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
@@ -336,18 +316,18 @@ struct DownloadRowView: View {
     private var downloadStatusText: String {
         switch download.state {
         case .waiting:
-            return localizedString("Waiting")
+            return String(localized: "Waiting")
         case .downloading:
-            return localizedString("Downloading...")
+            return String(localized: "Downloading...")
         case .paused:
-            return localizedString("Paused")
+            return String(localized: "Paused")
         case .completed:
-            return localizedString("Completed")
+            return String(localized: "Completed")
         case .failed:
             if let errorMessage = download.errorMessage {
-                return "\(localizedString("Failed")): \(errorMessage)"
+                return "\(String(localized: "Failed")): \(errorMessage)"
             } else {
-                return localizedString("Failed")
+                return String(localized: "Failed")
             }
         }
     }
@@ -410,38 +390,6 @@ struct DownloadRowView: View {
         let formatter = ByteCountFormatter()
         formatter.countStyle = .file
         return formatter.string(fromByteCount: bytes)
-    }
-    
-    private func localizedString(_ key: String) -> String {
-        let lang = UserDefaults.standard.string(forKey: "Feather.appLanguage") ?? "en"
-        switch key {
-        case "Cancel":
-            return lang == "fa" ? "لغو" : "Cancel"
-        case "Retry":
-            return lang == "fa" ? "تلاش مجدد" : "Retry"
-        case "Waiting":
-            return lang == "fa" ? "در انتظار" : "Waiting"
-        case "Preparing...":
-            return lang == "fa" ? "در حال آماده‌سازی..." : "Preparing..."
-        case "Downloading...":
-            return lang == "fa" ? "در حال دانلود..." : "Downloading..."
-        case "Paused":
-            return lang == "fa" ? "متوقف شده" : "Paused"
-        case "Canceling...":
-            return lang == "fa" ? "در حال لغو..." : "Canceling..."
-        case "Completed":
-            return lang == "fa" ? "تکمیل شده" : "Completed"
-        case "Failed":
-            return lang == "fa" ? "خطا" : "Failed"
-        case "Unknown":
-            return lang == "fa" ? "نامشخص" : "Unknown"
-        case "Download Complete!":
-            return lang == "fa" ? "دانلود تکمیل شد!" : "Download Complete!"
-        case "Go to LIBRARY to sign and install this file":
-            return lang == "fa" ? "برای امضا و نصب فایل به کتابخانه مراجعه کنید" : "Go to Library to sign and install this file"
-        default:
-            return key
-        }
     }
 }
 

@@ -15,7 +15,7 @@ import NimbleJSON
 struct AboutView: View {
 	// MARK: Body
     var body: some View {
-        NBList(.localized("About Baba App")) {
+        NBList(.localized("About Baba Apps")) {
 				Section {
 					VStack {
                         Image(uiImage: AppIconView.altImage(UIApplication.shared.alternateIconName))

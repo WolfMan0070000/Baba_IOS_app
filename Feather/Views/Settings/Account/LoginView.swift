@@ -20,25 +20,25 @@ struct LoginView: View {
         Form {
             if authManager.isAuthenticated {
                 // User is logged in - show account info and logout option
-                Section("Account") {
+                Section(.localized("Account")) {
                     HStack {
-                        Text("Email")
+                        Text(.localized("Email"))
                         Spacer()
-                        Text(authManager.currentUserEmail ?? "Unknown")
+                        Text(authManager.currentUserEmail ?? .localized("Unknown"))
                             .foregroundColor(.secondary)
                     }
                     
                     HStack {
-                        Text("Status")
+                        Text(.localized("Status"))
                         Spacer()
-                        Text("Signed In")
+                        Text(.localized("Signed In"))
                             .foregroundColor(.green)
                     }
                 }
                 
-                Section("Server") {
+                Section(.localized("Server")) {
                     HStack {
-                        Text("API Base URL")
+                        Text(.localized("API Base URL"))
                         Spacer()
                         Text(authManager.apiBaseURL.absoluteString)
                             .foregroundColor(.secondary)
@@ -50,22 +50,22 @@ struct LoginView: View {
                     Button(role: .destructive) {
                         authManager.logout()
                     } label: {
-                        Text("Sign Out")
+                        Text(.localized("Sign Out"))
                     }
                 }
             } else {
                 // User is not logged in - show login form
-                Section("Account") {
-                    TextField("Email", text: $email)
+                Section(.localized("Account")) {
+                    TextField(.localized("Email"), text: $email)
                         .keyboardType(.emailAddress)
                         .textContentType(.username)
                         .autocapitalization(.none)
-                    SecureField("Password", text: $password)
+                    SecureField(.localized("Password"), text: $password)
                         .textContentType(.password)
                 }
 
-                Section("Server") {
-                    TextField("API Base URL", text: $apiBaseURL)
+                Section(.localized("Server")) {
+                    TextField(.localized("API Base URL"), text: $apiBaseURL)
                         .autocapitalization(.none)
                         .textContentType(.URL)
                 }
@@ -80,13 +80,13 @@ struct LoginView: View {
 
                 Section {
                     Button(action: onLogin) {
-                        if isLoading { ProgressView() } else { Text("Sign In") }
+                        if isLoading { ProgressView() } else { Text(.localized("Sign In")) }
                     }
                     .disabled(isLoading || email.isEmpty || password.isEmpty)
                 }
             }
         }
-        .navigationTitle("Account")
+        .navigationTitle(.localized("Account"))
     }
 
     private func onLogin() {

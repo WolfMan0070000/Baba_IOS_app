@@ -9,7 +9,7 @@ import Foundation
 
 // MARK: - App Data Models
 
-struct IOSAppDTO: Decodable, Identifiable {
+struct IOSAppDTO: Codable, Identifiable {
     let id: Int
     let bundleIdentifier: String
     let name: String
@@ -114,7 +114,7 @@ struct IOSAppDTO: Decodable, Identifiable {
     }
 }
 
-struct AppCategory: Decodable, Identifiable {
+struct AppCategory: Codable, Identifiable {
     let id: Int
     let nameEn: String
     let nameFa: String
@@ -129,7 +129,7 @@ struct AppCategory: Decodable, Identifiable {
     var name: String { nameEn }
 }
 
-struct Review: Decodable, Identifiable {
+struct Review: Codable, Identifiable {
     let id: Int
     let rating: Double
     let comment: String?
@@ -140,11 +140,13 @@ struct Review: Decodable, Identifiable {
 
 // MARK: - Homepage Layout Models
 
-struct HomepageSectionDTO: Decodable {
+struct HomepageSectionDTO: Codable {
     let id: String
     let type: String
     let title_fa: String?
     let title_en: String?
+    let subtitle_fa: String?
+    let subtitle_en: String?
     let appIds: [String]?
     let enabled: Bool
     let order: Int
@@ -153,13 +155,18 @@ struct HomepageSectionDTO: Decodable {
         let lang = UserDefaults.standard.string(forKey: "Feather.appLanguage") ?? "fa"
         return lang == "fa" ? (title_fa ?? title_en) : (title_en ?? title_fa)
     }
+    
+    var localizedSubtitle: String? {
+        let lang = UserDefaults.standard.string(forKey: "Feather.appLanguage") ?? "fa"
+        return lang == "fa" ? (subtitle_fa ?? subtitle_en) : (subtitle_en ?? subtitle_fa)
+    }
 }
 
-struct PageResponse: Decodable {
+struct PageResponse: Codable {
     let blocks: [HomepageSectionDTO]
 }
 
-struct IOSHomepageResponse: Decodable {
+struct IOSHomepageResponse: Codable {
     let sections: [HomepageSectionDTO]
     let banners: String?
     let editorsChoice: String?

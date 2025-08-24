@@ -23,12 +23,12 @@ struct WelcomeView: View {
                 
                 // Welcome Text
                 VStack(spacing: 16) {
-                    Text("Welcome to Baba App")
+                    Text(.localized("Welcome to Baba Apps"))
                         .font(.largeTitle)
                         .fontWeight(.bold)
                         .multilineTextAlignment(.center)
                     
-                    Text("Sign in to access your certificates and sync your apps across devices.")
+                    Text(.localized("Sign in to access your certificates and sync your apps across devices."))
                         .font(.body)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
@@ -42,7 +42,7 @@ struct WelcomeView: View {
                     Button(action: {
                         showLoginView = true
                     }) {
-                        Text("Sign In")
+                        Text(.localized("Sign In"))
                             .font(.headline)
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
@@ -55,7 +55,7 @@ struct WelcomeView: View {
                         // Skip login - set a flag to not show welcome again
                         UserDefaults.standard.set(true, forKey: "Feather.hasSeenWelcome")
                     }) {
-                        Text("Skip for Now")
+                        Text(.localized("Skip for Now"))
                             .font(.headline)
                             .foregroundColor(.blue)
                             .frame(maxWidth: .infinity)
@@ -80,7 +80,7 @@ struct WelcomeView: View {
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
                         ToolbarItem(placement: .navigationBarLeading) {
-                            Button("Cancel") {
+                            Button(.localized("Cancel")) {
                                 showLoginView = false
                             }
                         }

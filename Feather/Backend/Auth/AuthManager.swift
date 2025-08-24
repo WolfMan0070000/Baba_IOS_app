@@ -73,6 +73,10 @@ final class AuthManager: ObservableObject {
         await MainActor.run {
             self.isAuthenticated = true
             self.currentUserEmail = decoded.user.email
+            
+            // Clear homepage cache on login to get fresh data
+            NetworkManager.shared.invalidateCacheOnLogin(baseURL: self.apiBaseURL.absoluteString)
+            
             let alert = UIAlertController(
                 title: .localized("ورود موفق"),
                 message: .localized("شما وارد حساب خود شدید."),
@@ -111,6 +115,9 @@ final class AuthManager: ObservableObject {
     }
 
     func logout() {
+        // Clear cache on logout
+        NetworkManager.shared.clearAllCaches()
+        
         try? KeychainHelper.shared.delete(service: tokenService)
         try? KeychainHelper.shared.delete(service: emailService)
         DispatchQueue.main.async { [weak self] in

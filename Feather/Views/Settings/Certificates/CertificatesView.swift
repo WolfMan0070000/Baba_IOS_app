@@ -140,7 +140,7 @@ extension CertificatesView {
 		let certificatesDir = documentsURL.appendingPathComponent("Certificates", isDirectory: true)
 		
 		var message = "Certificate files location:\n\n"
-		message += "Path: Files app → On My iPhone → Baba App → Certificates\n"
+		message += "Path: Files app → On My iPhone → Baba Apps → Certificates\n"
 		message += "Directory: \(certificatesDir.path)\n\n"
 		
 		// Check if directory exists and list files

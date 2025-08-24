@@ -15,8 +15,6 @@ import IDeviceSwift
 struct SettingsView: View {
     @State private var _currentIcon: String? = UIApplication.shared.alternateIconName
 
-    private let _donationsUrl = "https://github.com/sponsors/khcrysalis"
-    private let _githubUrl = "https://github.com/khcrysalis/Feather"
     @AppStorage("Feather.appLanguage") private var _appLanguage: String = "en"
 
     private let _availableLanguages: [(code: String, name: String)] = [
@@ -100,23 +98,7 @@ extension SettingsView {
                 }
             }
 
-            Button(.localized("Submit Feedback"), systemImage: "safari") {
-                let bugAction: UIAlertAction = .init(title: .localized("Bug Report"), style: .default) { _ in
-                    UIApplication.open(_makeGitHubIssueURL(url: _githubUrl))
-                }
 
-                let chooseAction: UIAlertAction = .init(title: .localized("Other"), style: .default) { _ in
-                    UIApplication.open(URL(string: "\(_githubUrl)/issues/new/choose")!)
-                }
-
-                UIAlertController.showAlertWithCancel(
-                    title: .localized("Submit Feedback"),
-                    message: nil,
-                    actions: [bugAction, chooseAction]
-                )
-            }
-        } footer: {
-            Text(.localized("If any issues occur within the app please report it via the GitHub repository. When submitting an issue, make sure to submit detailed information."))
         }
     }
 
@@ -137,51 +119,5 @@ extension SettingsView {
         }
     }
 
-    private func _makeGitHubIssueURL(url: String) -> String {
-        var configurationSection = "### App Configuration:\n"
 
-        switch UserDefaults.standard.integer(forKey: "Feather.installationMethod") {
-        case 0: // Server
-            let serverMethod = UserDefaults.standard.integer(forKey: "Feather.serverMethod")
-            let ipFix = UserDefaults.standard.bool(forKey: "Feather.ipFix")
-            let serverType = (serverMethod == 0) ? "Fully Local" : "Semi Local"
-            configurationSection += "- Install method: `Server`\n"
-            configurationSection += "  - Server type: `\(serverType)`\n"
-            configurationSection += "  - IP Fix: `\(ipFix)`\n"
-        case 1: // idevice
-            let pairingPath = HeartbeatManager.pairingFile()
-            let pairingExists = FileManager.default.fileExists(atPath: pairingPath)
-            let pairingStatus = pairingExists ? "`Present`" : "`Not Present`"
-            configurationSection += "- Install method: `idevice`\n"
-            configurationSection += "  - Pairing file: \(pairingStatus)\n"
-        default:
-            configurationSection += "- Install method: `Unknown`\n"
-        }
-
-        let body = """
-		### Device Information
-		- Device: `\(MobileGestalt().getStringForName("PhysicalHardwareNameString") ?? "Unknown")`
-		- iOS Version: `\(UIDevice.current.systemVersion)`
-		- App Version: `\(Bundle.main.version)`
-		
-		\(configurationSection)
-		
-		### Issue Description
-		<!-- Describe your issue here -->
-		
-		### Steps to Reproduce
-		1. 
-		2. 
-		3. 
-		
-		### Expected Behavior
-		
-		### Actual Behavior
-		"""
-        let encodedTitle = "[Bug] replace this with a descriptive title "
-            .addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
-        let encodedBody = body
-            .addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
-        return "\(url)/issues/new?template=bug.yml&title=\(encodedTitle)&text=\(encodedBody)"
-    }
 }
