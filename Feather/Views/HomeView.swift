@@ -215,7 +215,6 @@ struct HomeView: View {
             await loadContent(force: true, reason: "pull_to_refresh")
         }
     }
-
     
     private var emptyStateView: some View {
         VStack(spacing: 20) {
@@ -422,7 +421,6 @@ struct HomeView: View {
     }
 
 }
-
 // MARK: - Simple Card Components
 
 private struct FeaturedSectionView: View {

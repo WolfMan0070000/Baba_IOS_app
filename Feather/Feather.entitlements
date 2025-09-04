@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- File System Access -->
+    <key>com.apple.security.files.user-selected.read-write</key>
+    <true/>
+    <key>com.apple.security.files.downloads.read-write</key>
+    <true/>
+    <key>com.apple.security.temporary-exception.files.absolute-path.read-write</key>
+    <array>
+        <string>/private/var/mobile/Containers/Data/Application/</string>
+        <string>/var/mobile/Containers/Data/Application/</string>
+    </array>
+    
+    <!-- Document Directory Access -->
+    <key>com.apple.security.application-groups</key>
+    <array>
+        <string>group.thewonderofyou.Feather</string>
+    </array>
+    
+    <!-- Background Modes -->
+    <key>com.apple.developer.background-modes</key>
+    <array>
+        <string>background-processing</string>
+        <string>background-fetch</string>
+        <string>background-downloads</string>
+    </array>
+    
+    <!-- Network Access for Downloads -->
+    <key>com.apple.security.network.client</key>
+    <true/>
+    
+    <!-- Associated Domains (as mentioned in README) -->
+    <key>com.apple.developer.associated-domains</key>
+    <array>
+        <string>applinks:*.backloop.dev</string>
+    </array>
+    
+    <!-- Custom Network Protocol (iOS 18 requirement) -->
+    <key>com.apple.developer.networking.custom-protocol</key>
+    <array>
+        <string>feather</string>
+        <string>itms-services</string>
+    </array>
+    
+    <!-- File Sharing Enabled -->
+    <key>com.apple.security.files.user-selected.read-only</key>
+    <true/>
+    
+    <!-- Keychain Access -->
+    <key>keychain-access-groups</key>
+    <array>
+        <string>$(AppIdentifierPrefix)thewonderofyou.Feather</string>
+    </array>
+    
+    <!-- Get Task Allow (for debugging) -->
+    <key>get-task-allow</key>
+    <true/>
+</dict>
+</plist>

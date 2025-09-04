@@ -275,27 +275,27 @@ struct AppDetailView: View {
     }
     
     private var downloadButtonText: String {
-        guard let download = currentDownload else { return "دانلود" }
+        guard let download = currentDownload else { return String(localized: "Download") }
         
         if download.isCompleted {
-            return "نصب شده"
+            return String(localized: "Downloaded")
         }
         
         guard let task = download.task else {
-            return "در صف"
+            return String(localized: "Queued")
         }
         
         switch task.state {
         case .running:
-            return "در حال دانلود"
+            return String(localized: "Downloading")
         case .suspended:
-            return "متوقف شده"
+            return String(localized: "Paused")
         case .canceling:
-            return "لغو..."
+            return String(localized: "Cancelling")
         case .completed:
-            return "تکمیل شده"
+            return String(localized: "Completed")
         @unknown default:
-            return "آماده"
+            return String(localized: "Ready")
         }
     }
     
@@ -358,7 +358,9 @@ struct AppDetailView: View {
         // Check if already downloading or completed
         if let existingDownload = currentDownload {
             if existingDownload.isCompleted {
-                // Already installed, do nothing
+                // Navigate to Library when download is completed
+                NotificationCenter.default.post(name: NSNotification.Name("SwitchToLibraryTab"), object: nil)
+                dismiss() // Also dismiss the current view
                 return
             }
             

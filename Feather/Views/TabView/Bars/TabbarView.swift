@@ -24,5 +24,9 @@ struct TabbarView: View {
 			}
 		}
 		.id(_appLanguage) // recreate TabView when language changes to refresh tab titles
+		.onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SwitchToLibraryTab"))) { _ in
+			// Switch to Library tab
+			selectedTab = .library
+		}
 	}
 }

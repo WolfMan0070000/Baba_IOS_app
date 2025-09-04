@@ -30,8 +30,6 @@ struct FeatherApp: App {
                 } else {
                     // Normal app flow
                     VStack {
-                        DownloadHeaderView(downloadManager: downloadManager)
-                            .transition(.move(edge: .top).combined(with: .opacity))
                         VariedTabbarView()
                             .environment(\.managedObjectContext, storage.context)
                             .environment(\.locale, .init(identifier: appLanguage))
@@ -39,8 +37,7 @@ struct FeatherApp: App {
                             .transition(.move(edge: .top).combined(with: .opacity))
                             .tint(AppTheme.primary)
                     }
-                    .animation(.smooth, value: downloadManager.manualDownloads.description)
-                }
+            }
             }
 			.onReceive(NotificationCenter.default.publisher(for: .heartbeatInvalidHost)) { _ in
 				DispatchQueue.main.async {

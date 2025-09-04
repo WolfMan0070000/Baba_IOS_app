@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Ultra-minimal entitlements for FREE Apple Developer accounts -->
+    <!-- This should work with any free account -->
+    
+    <!-- Get Task Allow (for debugging) -->
+    <key>get-task-allow</key>
+    <true/>
+    
+    <!-- Basic Network Access -->
+    <key>com.apple.security.network.client</key>
+    <true/>
+    
+    <!-- 
+    NOTE: Even basic file access might be restricted on some free accounts.
+    If you still get errors, try building without any entitlements file.
+    -->
+</dict>
+</plist>

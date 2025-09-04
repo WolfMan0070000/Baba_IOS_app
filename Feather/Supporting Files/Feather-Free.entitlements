@@ -12,6 +12,12 @@
     <key>com.apple.security.network.client</key>
     <true/>
     
+    <!-- Background Processing (Limited for Free Accounts) -->
+    <key>com.apple.developer.background-modes</key>
+    <array>
+        <string>background-processing</string>
+    </array>
+    
     <!-- Keychain Access -->
     <key>keychain-access-groups</key>
     <array>
@@ -24,33 +30,10 @@
     
     <!-- 
     REMOVED FOR FREE ACCOUNT COMPATIBILITY:
-    - com.apple.developer.background-modes (NOT supported on Free Account)
     - com.apple.developer.associated-domains (Requires Paid Account)
-    - com.apple.security.application-groups (Requires Paid Account) 
+    - com.apple.security.application-groups (Requires Paid Account)
     - com.apple.developer.networking.custom-protocol (Requires Paid Account)
-    
-    If you upgrade to a paid Apple Developer account ($99/year), you can add these back:
-    
-    <key>com.apple.developer.background-modes</key>
-    <array>
-        <string>background-processing</string>
-    </array>
-    
-    <key>com.apple.developer.associated-domains</key>
-    <array>
-        <string>applinks:*.backloop.dev</string>
-    </array>
-    
-    <key>com.apple.security.application-groups</key>
-    <array>
-        <string>group.thewonderofyou.Feather</string>
-    </array>
-    
-    <key>com.apple.developer.networking.custom-protocol</key>
-    <array>
-        <string>feather</string>
-        <string>itms-services</string>
-    </array>
+    - background-fetch and background-downloads (Limited on Free Account)
     -->
 </dict>
 </plist>

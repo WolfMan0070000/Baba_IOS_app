@@ -117,12 +117,15 @@
 			</array>
 		</dict>
 	</array>
+	<!-- Background modes removed for free account compatibility -->
+	<!-- 
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>background-processing</string>
 		<string>background-fetch</string>
 		<string>background-downloads</string>
 	</array>
+	-->
 	<key>UIFileSharingEnabled</key>
 	<true/>
 	<key>UILaunchScreen</key>
