@@ -140,8 +140,8 @@ struct Options: Codable, Equatable {
 		proMotion: false,
 		gameMode: false,
 		ipadFullscreen: false,
-		removeURLScheme: false,
-		removeProvisioning: false,
+		removeURLScheme: true,
+		removeProvisioning: true,
 		changeLanguageFilesForCustomDisplayName: false,
 		
 		// MARK: Experiments

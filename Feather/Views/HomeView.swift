@@ -1112,7 +1112,7 @@ private struct AppBannerCard: View {
     
     private var downloadButtonImage: String {
         guard let download = currentDownload else {
-            return "icloud.and.arrow.down"
+            return "arrow.down.circle.fill"
         }
         
         switch download.state {
@@ -1299,7 +1299,7 @@ private struct AppHeroCard: View {
     
     private var downloadButtonImage: String {
         guard let download = currentDownload else {
-            return "icloud.and.arrow.down"
+            return "arrow.down.circle.fill"
         }
         
         switch download.state {
@@ -1501,7 +1501,7 @@ private struct AppMustHaveCard: View {
     
     private var downloadButtonImage: String {
         guard let download = currentDownload else {
-            return "icloud.and.arrow.down"
+            return "arrow.down.circle.fill"
         }
         
         switch download.state {
@@ -1791,7 +1791,7 @@ private struct SectionAppRow: View {
     
     private var downloadButtonImage: String {
         guard let download = currentDownload else {
-            return "icloud.and.arrow.down"
+            return "arrow.down.circle.fill"
         }
         
         switch download.state {
