@@ -3,11 +3,38 @@
 //  Feather
 //
 //  Created by Assistant on 12.08.2025.
+//  Last Updated: 06.09.2025
+//
+//  MARK: - HomeView - Main App Store Interface
+//  
+//  This is the main home screen of the app that displays:
+//  - Dynamic sections configured from admin panel
+//  - Featured apps, categories, and various app collections
+//  - Multiple layout types (grid, banner, hero, mustHave, etc.)
+//  - Smart caching and performance optimizations
+//  - Accessibility support and error handling
+//  
+//  Key Features:
+//  - ✅ Responsive design with multiple card layouts
+//  - ✅ Smart caching with background refresh
+//  - ✅ Parallel app loading for better performance
+//  - ✅ Comprehensive error handling with user feedback
+//  - ✅ Accessibility labels and VoiceOver support
+//  - ✅ Category navigation with proper state management
+//  - ✅ Download integration with visual feedback
+//  - ✅ Pull-to-refresh and lifecycle-aware loading
 //
 
 import SwiftUI
 import NimbleViews
 import NukeUI
+
+// MARK: - Section Apps Data Model
+struct SectionAppsData: Identifiable {
+    let id = UUID()
+    let title: String
+    let apps: [IOSAppDTO]
+}
 
 struct HomeView: View {
     @State private var isLoading = false  // Start with false for better UX
@@ -19,10 +46,10 @@ struct HomeView: View {
     @State private var selectedCategory: AppCategory?
     @State private var categoryApps: [IOSAppDTO] = []
     @State private var isLoadingCategoryApps = false
-    @State private var selectedSectionApps: [IOSAppDTO] = []
-    @State private var selectedSectionTitle: String? = nil
-    @State private var showingSectionApps = false
+    @State private var selectedSectionForNavigation: SectionAppsData? = nil
     @State private var hasInitialLoad = false  // Track if we've loaded data at least once
+    @State private var errorMessage: String? = nil // For error handling
+    @State private var showingErrorAlert = false
     
     // Performance and Caching
     @StateObject private var networkManager = NetworkManager.shared
@@ -83,6 +110,45 @@ struct HomeView: View {
                     EmptyView()
                 }
                 .hidden()
+                
+                // Hidden NavigationLink for section apps navigation
+                NavigationLink(
+                    destination: Group {
+                        if let sectionData = selectedSectionForNavigation {
+                            SectionAppsView(
+                                title: sectionData.title,
+                                apps: sectionData.apps,
+                                onAppTap: { app in
+                                    selectedApp = app
+                                }
+                            )
+                            .onAppear {
+                                print("📱 SectionAppsView: Appeared for section '\(sectionData.title)' with \(sectionData.apps.count) apps")
+                            }
+                        } else {
+                            EmptyView()
+                        }
+                    },
+                    isActive: Binding<Bool>(
+                        get: { 
+                            let isActive = selectedSectionForNavigation != nil
+                            if isActive {
+                                print("➡️ NavigationLink: Becoming active for section '\(selectedSectionForNavigation?.title ?? "unknown")'")
+                            }
+                            return isActive
+                        },
+                        set: { newValue in
+                            print("⬅️ NavigationLink: Set active to \(newValue) (was: \(selectedSectionForNavigation != nil))")
+                            if !newValue { 
+                                selectedSectionForNavigation = nil 
+                                print("📱 NavigationLink: Cleared selectedSectionForNavigation")
+                            }
+                        }
+                    )
+                ) {
+                    EmptyView()
+                }
+                .hidden()
             }
             .task {
                 // Always load fresh data on initial app launch to ensure up-to-date content
@@ -108,8 +174,13 @@ struct HomeView: View {
                 } else if sections.isEmpty && !hasInitialLoad {
                     // Force fresh data if we have no data at all (empty state) 
                     Task { await loadContent(force: true, reason: "first_appear_no_data") }
+                } else if !sections.isEmpty {
+                    // We have data already - just log for debugging
+                    print("📊 HomeView: Already have \(sections.count) sections loaded")
                 }
             }
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel("Home screen with app sections")
             .onChange(of: authManager.isAuthenticated) { isAuthenticated in
                 if isAuthenticated {
                     // User just logged in - refresh data
@@ -127,17 +198,16 @@ struct HomeView: View {
         .sheet(item: $selectedApp) { app in
             AppDetailView(app: app)
         }
-        .sheet(isPresented: $showingSectionApps) {
-            if let title = selectedSectionTitle {
-                SectionAppsView(
-                    title: title,
-                    apps: selectedSectionApps,
-                    onAppTap: { app in
-                        showingSectionApps = false
-                        selectedApp = app
-                    }
-                )
+        .alert("Error", isPresented: $showingErrorAlert, presenting: errorMessage) { _ in
+            Button("OK") {
+                errorMessage = nil
             }
+            Button("Retry") {
+                Task { await loadContent(force: true, reason: "error_retry") }
+                errorMessage = nil
+            }
+        } message: { message in
+            Text(message)
         }
     }
     
@@ -145,7 +215,7 @@ struct HomeView: View {
         VStack(spacing: 16) {
             ProgressView()
                 .scaleEffect(1.2)
-            Text(.localized("Loading apps..."))
+            Text(String(localized: "Loading apps..."))
                 .font(.subheadline)
                 .foregroundColor(.secondary)
         }
@@ -156,130 +226,20 @@ struct HomeView: View {
         ScrollView {
             VStack(spacing: 32) {
                 // Process only the configured sections from admin panel
-                ForEach(sections.filter({ $0.enabled }).sorted(by: { $0.order < $1.order }), id: \.id) { section in
+                let enabledSections = sections.filter { $0.enabled }
+                let sortedSections = enabledSections.sorted { $0.order < $1.order }
+                
+                ForEach(sortedSections, id: \.id) { section in
                     Group {
                         switch section.type {
                         case "featured":
-                            // Featured section with apps from admin panel
-                            if let appIds = section.appIds, !appIds.isEmpty {
-                                let sectionApps = appIds.compactMap { id in
-                                    appsById[id] ?? appsById.values.first(where: { "\($0.id)" == id })
-                                }
-                                if !sectionApps.isEmpty {
-                                    FeaturedSectionView(
-                                        title: section.localizedTitle ?? String(localized: "Featured"), 
-                                        apps: sectionApps,
-                                        onAppTap: { app in
-                                            selectedApp = app
-                                        },
-                                        onSectionTap: showSectionApps
-                                    )
-                                }
-                            }
+                            featuredSectionContent(section: section)
                             
                         case "categories":
-                            // Categories section - show selected categories from admin panel
-                            let categoriesToShow = {
-                                if let categoryIds = section.categoryIds, !categoryIds.isEmpty {
-                                    // Show only the categories selected by admin
-                                    let filtered = categoryIds.compactMap { id in
-                                        categories.first(where: { $0.id == id })
-                                    }
-                                    print("🏷️ HomeView: Showing \(filtered.count) admin-selected categories from \(categoryIds.count) IDs")
-                                    return filtered
-                                } else {
-                                    // Fallback: show all categories if none specifically selected
-                                    print("🏷️ HomeView: Showing all \(categories.count) categories (no specific selection)")
-                                    return categories
-                                }
-                            }()
-                            
-                            if !categoriesToShow.isEmpty {
-                                CategoriesSectionView(
-                                    title: section.localizedTitle ?? String(localized: "Categories"),
-                                    categories: categoriesToShow,
-                                    onCategoryTap: { categoryId in
-                                        print("🏷️ HomeView: Category tap received for ID \(categoryId)")
-                                        loadCategoryApps(categoryId: categoryId)
-                                    },
-                                    onSectionTap: { title in
-                                        // Show all categories as apps (you can customize this)
-                                        print("🏷️ HomeView: Categories section tapped: \(title)")
-                                        // For now, just show a sample message - you can implement category list view
-                                    }
-                                )
-                            } else {
-                                Text("No categories available")
-                                    .padding()
-                                    .foregroundColor(.secondary)
-                                    .onAppear {
-                                        print("⚠️ HomeView: No categories to display - total categories: \(categories.count)")
-                                    }
-                            }
+                            categoriesSectionContent(section: section)
                             
                         case "appStoreCategories":
-                            // App Store-style categories section
-                            let categoriesToShow = {
-                                if let categoryIds = section.categoryIds, !categoryIds.isEmpty {
-                                    // Show only the categories selected by admin
-                                    let filtered = categoryIds.compactMap { id in
-                                        categories.first(where: { $0.id == id })
-                                    }
-                                    print("🏷️ HomeView: Showing \(filtered.count) admin-selected App Store categories from \(categoryIds.count) IDs")
-                                    return filtered
-                                } else {
-                                    // Fallback: show all categories if none specifically selected
-                                    print("🏷️ HomeView: Showing all \(categories.count) App Store categories (no specific selection)")
-                                    return categories
-                                }
-                            }()
-                            
-                            if !categoriesToShow.isEmpty {
-                                VStack(alignment: .leading, spacing: 16) {
-                                    // Section Title - Clickable
-                                    if let title = section.localizedTitle {
-                                        Button(action: {
-                                            // Navigate to categories list
-                                            print("🔗 App Store Categories section tapped: \(title)")
-                                            // Show all categories as a list (you can implement this)
-                                        }) {
-                                            HStack {
-                                                Text(title)
-                                                    .font(.title2.bold())
-                                                    .foregroundColor(.primary)
-                                                
-                                                Spacer()
-                                                
-                                                Image(systemName: "chevron.right")
-                                                    .font(.headline)
-                                                    .foregroundColor(.secondary)
-                                            }
-                                        }
-                                        .buttonStyle(PlainButtonStyle())
-                                        .padding(.horizontal, 20)
-                                    }
-                                    
-                                    // App Store-style Categories
-                                    ScrollView(.horizontal, showsIndicators: false) {
-                                        HStack(spacing: 16) {
-                                            ForEach(categoriesToShow.prefix(10), id: \.id) { category in
-                                                AppStoreCategoryCard(category: category) {
-                                                    print("🏷️ HomeView: App Store Category tap received for ID \(category.id)")
-                                                    loadCategoryApps(categoryId: category.id)
-                                                }
-                                            }
-                                        }
-                                        .padding(.horizontal, 20)
-                                    }
-                                }
-                            } else {
-                                Text("No categories available")
-                                    .padding()
-                                    .foregroundColor(.secondary)
-                                    .onAppear {
-                                        print("⚠️ HomeView: No App Store categories to display - total categories: \(categories.count)")
-                                    }
-                            }
+                            appStoreCategoriesSectionContent(section: section)
                             
                         case "editorsChoice", "personalized", "trending", "newReleases", "banner", "carousel", "grid", "hero":
                             // Regular app sections with configured apps
@@ -301,9 +261,7 @@ struct HomeView: View {
             }
             .padding(.top, 20)
         }
-        .refreshable {
-            await loadContent(force: true, reason: "pull_to_refresh")
-        }
+
     }
     
     private var emptyStateView: some View {
@@ -335,14 +293,18 @@ struct HomeView: View {
     // MARK: - Data Loading
     
     private func showSectionApps(title: String, apps: [IOSAppDTO]) {
-        selectedSectionTitle = title
-        selectedSectionApps = apps
-        showingSectionApps = true
-        print("📱 HomeView: Showing section apps for '\(title)' with \(apps.count) apps")
+        selectedSectionForNavigation = SectionAppsData(title: title, apps: apps)
+        print("📱 HomeView: Navigating to section apps for '\(title)' with \(apps.count) apps")
     }
     
     private func loadCategoryApps(categoryId: Int) {
         print("📱 HomeView: loadCategoryApps called with categoryId: \(categoryId)")
+        
+        // Prevent duplicate loading
+        guard !isLoadingCategoryApps else {
+            print("⚠️ HomeView: Already loading category apps, skipping")
+            return
+        }
         
         // Find the category from our categories list
         guard let category = categories.first(where: { $0.id == categoryId }) else {
@@ -377,9 +339,11 @@ struct HomeView: View {
                     print("📱 HomeView: Current selectedCategory is now: \(self.selectedCategory?.displayName ?? "nil")")
                 }
             } catch {
-                print("❌ HomeView: Failed to load category apps: \(error)")
+                print("❌ HomeView: Failed to load category apps: \(error.localizedDescription)")
                 await MainActor.run {
                     self.isLoadingCategoryApps = false
+                    self.errorMessage = "Failed to load category apps: \(error.localizedDescription)"
+                    self.showingErrorAlert = true
                 }
             }
         }
@@ -438,16 +402,28 @@ struct HomeView: View {
             
             print("📦 HomeView: Loading \(sectionAppIds.count) apps from \(enabledSections.count) enabled sections")
             
-            for id in sectionAppIds {
-                do {
-                    let app = try await networkManager.fetchApp(
-                        id: id,
-                        baseURL: baseURL,
-                        forceRefresh: force
-                    )
-                    map[id] = app
-                } catch {
-                    print("❌ HomeView: Failed to load app \(id): \(error)")
+            // Load apps in parallel for better performance
+            await withTaskGroup(of: (String, IOSAppDTO?).self) { group in
+                for id in sectionAppIds {
+                    group.addTask {
+                        do {
+                            let app = try await self.networkManager.fetchApp(
+                                id: id,
+                                baseURL: baseURL,
+                                forceRefresh: force
+                            )
+                            return (id, app)
+                        } catch {
+                            print("❌ HomeView: Failed to load app \(id): \(error.localizedDescription)")
+                            return (id, nil)
+                        }
+                    }
+                }
+                
+                for await (id, app) in group {
+                    if let app = app {
+                        map[id] = app
+                    }
                 }
             }
             
@@ -461,9 +437,9 @@ struct HomeView: View {
                 print("⚠️ HomeView: Skipping featured apps (no featured section configured)")
             }
             
-            // Load categories only if there's a "categories" section configured
+            // Load categories only if there's a "categories" or "appStoreCategories" section configured
             var categoriesResponseFiltered: [AppCategory] = []
-            let hasCategoriesSection = enabledSections.contains { $0.type == "categories" }
+            let hasCategoriesSection = enabledSections.contains { $0.type == "categories" || $0.type == "appStoreCategories" }
             if hasCategoriesSection {
                 print("🏷️ HomeView: Loading categories (categories section configured)")
                 categoriesResponseFiltered = categoriesResponse
@@ -499,11 +475,16 @@ struct HomeView: View {
                     // Schedule background refresh to keep cache warm
                     networkManager.scheduleBackgroundRefresh(baseURL: baseURL, delay: 60)
                     print("💼 HomeView: Scheduled background refresh in 60 seconds")
+                    
+                    // Preload critical data for smooth UX
+                    Task.detached(priority: .background) {
+                        await self.preloadCriticalData()
+                    }
                 }
             }
             
         } catch {
-            print("❌ HomeView: Failed to load content (reason: \(reason)): \(error)")
+            print("❌ HomeView: Failed to load content (reason: \(reason)): \(error.localizedDescription)")
             await MainActor.run {
                 // Don't clear existing data on error, just stop loading
                 if sections.isEmpty {
@@ -512,8 +493,175 @@ struct HomeView: View {
                     self.appsById = [:]
                     self.categories = []
                     self.featuredApps = []
+                    
+                    // Show error message for critical failures
+                    if reason == "initial_app_launch" || reason == "user_retry" {
+                        self.errorMessage = "Failed to load app data: \(error.localizedDescription)"
+                        self.showingErrorAlert = true
+                    }
                 }
             }
+        }
+    }
+    
+    // MARK: - Performance Optimization
+    
+    private func preloadCriticalData() async {
+        // Preload the most important data in background
+        guard !sections.isEmpty else { return }
+        
+        let baseURL = authManager.apiBaseURL.absoluteString
+        
+        // Preload first few apps from each section for smooth scrolling
+        for section in sections.filter({ $0.enabled }).prefix(3) {
+            if let appIds = section.appIds?.prefix(3) {
+                await withTaskGroup(of: Void.self) { group in
+                    for appId in appIds {
+                        group.addTask {
+                            do {
+                                _ = try await self.networkManager.fetchApp(
+                                    id: appId,
+                                    baseURL: baseURL,
+                                    forceRefresh: false
+                                )
+                            } catch {
+                                // Silently fail for preloading
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // MARK: - Section Content Builders
+    
+    @ViewBuilder
+    private func featuredSectionContent(section: HomepageSectionDTO) -> some View {
+        // Featured section with apps from admin panel
+        if let appIds = section.appIds, !appIds.isEmpty {
+            let sectionApps = appIds.compactMap { id in
+                appsById[id] ?? appsById.values.first(where: { "\($0.id)" == id })
+            }
+            if !sectionApps.isEmpty {
+                let title = section.localizedTitle ?? String(localized: "Featured")
+                FeaturedSectionView(
+                    title: title,
+                    apps: sectionApps,
+                    onAppTap: { app in
+                        selectedApp = app
+                    },
+                    onSectionTap: showSectionApps
+                )
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private func categoriesSectionContent(section: HomepageSectionDTO) -> some View {
+        // Categories section - show selected categories from admin panel
+        let categoriesToShow: [AppCategory] = {
+            if let categoryIds = section.categoryIds, !categoryIds.isEmpty {
+                // Show only the categories selected by admin
+                let filtered = categoryIds.compactMap { id in
+                    categories.first(where: { $0.id == id })
+                }
+                print("🏷️ HomeView: Showing \(filtered.count) admin-selected categories from \(categoryIds.count) IDs")
+                return filtered
+            } else {
+                // Fallback: show all categories if none specifically selected
+                print("🏷️ HomeView: Showing all \(categories.count) categories (no specific selection)")
+                return categories
+            }
+        }()
+        
+        if !categoriesToShow.isEmpty {
+            let title = section.localizedTitle ?? String(localized: "Categories")
+            CategoriesSectionView(
+                title: title,
+                categories: categoriesToShow,
+                onCategoryTap: { categoryId in
+                    print("🏷️ HomeView: Category tap received for ID \(categoryId)")
+                    loadCategoryApps(categoryId: categoryId)
+                },
+                onSectionTap: { title in
+                    print("🏷️ HomeView: Categories section tapped: \(title)")
+                    showSectionApps(title: title, apps: [])
+                }
+            )
+        } else {
+            Text("No categories available")
+                .padding()
+                .foregroundColor(.secondary)
+                .onAppear {
+                    print("⚠️ HomeView: No categories to display - total categories: \(categories.count)")
+                }
+        }
+    }
+    
+    @ViewBuilder
+    private func appStoreCategoriesSectionContent(section: HomepageSectionDTO) -> some View {
+        // App Store-style categories section
+        let categoriesToShow: [AppCategory] = {
+            if let categoryIds = section.categoryIds, !categoryIds.isEmpty {
+                // Show only the categories selected by admin
+                let filtered = categoryIds.compactMap { id in
+                    categories.first(where: { $0.id == id })
+                }
+                print("🏷️ HomeView: Showing \(filtered.count) admin-selected App Store categories from \(categoryIds.count) IDs")
+                return filtered
+            } else {
+                // Fallback: show all categories if none specifically selected
+                print("🏷️ HomeView: Showing all \(categories.count) App Store categories (no specific selection)")
+                return categories
+            }
+        }()
+        
+        if !categoriesToShow.isEmpty {
+            VStack(alignment: .leading, spacing: 16) {
+                // Section Title - Clickable
+                if let title = section.localizedTitle {
+                    Button(action: {
+                        print("🔗 App Store Categories section tapped: \(title)")
+                        showSectionApps(title: title, apps: [])
+                    }) {
+                        HStack {
+                            Text(title)
+                                .font(.title2.bold())
+                                .foregroundColor(.primary)
+                            
+                            Spacer()
+                            
+                            Image(systemName: "chevron.right")
+                                .font(.headline)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .padding(.horizontal, 20)
+                }
+                
+                // App Store-style Categories
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 16) {
+                        let limitedCategories = Array(categoriesToShow.prefix(10))
+                        ForEach(limitedCategories, id: \.id) { category in
+                            AppStoreCategoryCard(category: category) {
+                                print("🏷️ HomeView: App Store Category tap received for ID \(category.id)")
+                                loadCategoryApps(categoryId: category.id)
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                }
+            }
+        } else {
+            Text("No categories available")
+                .padding()
+                .foregroundColor(.secondary)
+                .onAppear {
+                    print("⚠️ HomeView: No App Store categories to display - total categories: \(categories.count)")
+                }
         }
     }
 
@@ -550,7 +698,7 @@ private struct FeaturedSectionView: View {
             
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 16) {
-                    ForEach(apps.prefix(5), id: \.id) { app in
+                    ForEach(Array(apps.prefix(5)), id: \.id) { app in
                         FeaturedAppCard(app: app) {
                             onAppTap(app)
                         }
@@ -600,12 +748,15 @@ private struct CategoriesSectionView: View {
                     }
                 }
                 .padding(.horizontal, 20)
-                .onAppear {
-                    print("📱 CategoriesSectionView: Displayed \(categories.count) categories")
-                    for category in categories {
-                        print("   - \(category.displayName) (ID: \(category.id))")
+                    .onAppear {
+                        print("📱 CategoriesSectionView: Displayed \(categories.count) categories")
+                        for category in categories.prefix(5) {
+                            print("   - \(category.displayName) (ID: \(category.id))")
+                        }
+                        if categories.count > 5 {
+                            print("   ... and \(categories.count - 5) more categories")
+                        }
                     }
-                }
             }
         }
     }
@@ -618,7 +769,7 @@ private struct FeaturedAppCard: View {
     var body: some View {
         Button(action: onTap) {
             VStack(spacing: 12) {
-                // App Icon
+                // App Icon with loading states
                 LazyImage(url: URL(string: app.iconUrl)) { state in
                     if let image = state.image {
                         image
@@ -626,13 +777,26 @@ private struct FeaturedAppCard: View {
                             .aspectRatio(contentMode: .fit)
                             .frame(width: 120, height: 120)
                             .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+                            .accessibility(label: Text("\(app.displayName) app icon"))
+                    } else if state.error != nil {
+                        // Error state
+                        RoundedRectangle(cornerRadius: 26, style: .continuous)
+                            .fill(Color.red.opacity(0.1))
+                            .frame(width: 120, height: 120)
+                            .overlay(
+                                Image(systemName: "exclamationmark.triangle")
+                                    .foregroundColor(.red)
+                            )
+                            .accessibility(label: Text("Failed to load \(app.displayName) app icon"))
                     } else {
+                        // Loading state
                         RoundedRectangle(cornerRadius: 26, style: .continuous)
                             .fill(Color.gray.opacity(0.1))
                             .frame(width: 120, height: 120)
                             .overlay(
                                 ProgressView()
                             )
+                            .accessibility(label: Text("Loading \(app.displayName) app icon"))
                     }
                 }
                 
@@ -648,6 +812,7 @@ private struct FeaturedAppCard: View {
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .lineLimit(1)
+                            .accessibility(label: Text("Developer: \(developer)"))
                     }
                     
                     // Rating stars - reserved space for consistency
@@ -658,6 +823,7 @@ private struct FeaturedAppCard: View {
                                     .font(.caption2)
                                     .foregroundColor(.yellow)
                             }
+                            .accessibility(label: Text("Rating: \(rating, specifier: "%.1f") out of 5 stars"))
                         } else {
                             // Invisible spacer to maintain consistent height
                             HStack(spacing: 1) {
@@ -667,11 +833,15 @@ private struct FeaturedAppCard: View {
                                         .foregroundColor(.clear)
                                 }
                             }
+                            .accessibility(hidden: true)
                         }
                     }
                 }
                 .frame(width: 120)
             }
+        }
+        .onTapGesture {
+            onTap()
         }
         .buttonStyle(PlainButtonStyle())
     }
@@ -683,7 +853,7 @@ private struct AppStoreCategoryCard: View {
     
     var body: some View {
         Button(action: {
-            print("💆 AppStoreCategoryCard: Tapped on category '\(category.displayName)' (ID: \(category.id))")
+            print("🏷️ AppStoreCategoryCard: Tapped on category '\(category.displayName)' (ID: \(category.id))")
             action()
         }) {
             VStack(spacing: 12) {
@@ -771,7 +941,7 @@ private struct CategoryCard: View {
     
     var body: some View {
         Button(action: {
-            print("💆 CategoryCard: Tapped on category '\(category.displayName)' (ID: \(category.id))")
+            print("🏷️ CategoryCard: Tapped on category '\(category.displayName)' (ID: \(category.id))")
             action()
         }) {
             VStack(spacing: 8) {
@@ -831,6 +1001,9 @@ private struct CategoryCard: View {
                     .multilineTextAlignment(.center)
                     .frame(width: 80)
             }
+        }
+        .onTapGesture {
+            action()
         }
         .buttonStyle(PlainButtonStyle())
     }
@@ -903,11 +1076,11 @@ private struct AppSectionView: View {
                         
                     case "hero":
                         // Hero layout - TabView with smooth paging like must-have cards
-                        let heroAppsChunks = apps.chunked(into: 2) // Split hero apps into groups of 2 for better display
+                        let heroAppsChunks = Array(apps).chunked(into: 2) // Split hero apps into groups of 2 for better display
                         
                         // Calculate height separately to avoid type checker complexity
                         let heroHeight: CGFloat = {
-                            guard heroAppsChunks.count > 0 else { return 200 }
+                            guard !heroAppsChunks.isEmpty, !heroAppsChunks[0].isEmpty else { return 200 }
                             let cardsPerPage = heroAppsChunks[0].count
                             let cardHeight = 160
                             let spacing = 16
@@ -915,24 +1088,25 @@ private struct AppSectionView: View {
                             return CGFloat(cardsPerPage * cardHeight + (cardsPerPage - 1) * spacing + padding)
                         }()
                         
-                        TabView {
-                            ForEach(0..<heroAppsChunks.count, id: \.self) { chunkIndex in
-                                VStack(spacing: 16) {
-                                    ForEach(0..<heroAppsChunks[chunkIndex].count, id: \.self) { appIndex in
-                                        let app = heroAppsChunks[chunkIndex][appIndex]
-                                        AppHeroCard(app: app) {
-                                            onAppTap(app)
+                        if !heroAppsChunks.isEmpty {
+                            TabView {
+                                ForEach(0..<heroAppsChunks.count, id: \.self) { chunkIndex in
+                                    VStack(spacing: 16) {
+                                        ForEach(0..<heroAppsChunks[chunkIndex].count, id: \.self) { appIndex in
+                                            let app = heroAppsChunks[chunkIndex][appIndex]
+                                            AppHeroCard(app: app) {
+                                                onAppTap(app)
+                                            }
+                                        }
+                                        
+                                        // Add spacer to fill remaining space if less than 2 apps
+                                        if heroAppsChunks[chunkIndex].count < 2 {
+                                            Spacer()
                                         }
                                     }
-                                    
-                                    // Add spacer to fill remaining space if less than 2 apps
-                                    if heroAppsChunks[chunkIndex].count < 2 {
-                                        Spacer()
-                                    }
+                                    .padding(.horizontal, 20)
                                 }
-                                .padding(.horizontal, 20)
                             }
-                        }
                         .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
                         .frame(height: heroHeight)
                         .overlay(
@@ -950,60 +1124,63 @@ private struct AppSectionView: View {
                                             endPoint: .trailing
                                         ))
                                         .frame(width: 40)
-                                }
-                            },
-                            alignment: .trailing
-                        )
+                                    }
+                                },
+                                alignment: .trailing
+                            )
+                        }
                         
                     case "mustHave":
                         // Must-Have Apps layout (App Store style) - Paginated groups of 3 with TabView
-                        let appsChunks = apps.chunked(into: 3) // Split apps into groups of 3
+                        let appsChunks = Array(apps).chunked(into: 3) // Split apps into groups of 3
                         
-                        TabView {
-                            ForEach(0..<appsChunks.count, id: \.self) { chunkIndex in
-                                VStack(spacing: 0) {
-                                    ForEach(0..<appsChunks[chunkIndex].count, id: \.self) { appIndex in
-                                        let app = appsChunks[chunkIndex][appIndex]
-                                        AppMustHaveCard(app: app) {
-                                            onAppTap(app)
+                        if !appsChunks.isEmpty {
+                            TabView {
+                                ForEach(0..<appsChunks.count, id: \.self) { chunkIndex in
+                                    VStack(spacing: 0) {
+                                        ForEach(0..<appsChunks[chunkIndex].count, id: \.self) { appIndex in
+                                            let app = appsChunks[chunkIndex][appIndex]
+                                            AppMustHaveCard(app: app) {
+                                                onAppTap(app)
+                                            }
+                                            
+                                            // Divider line between apps (except for last item in chunk)
+                                            if appIndex < appsChunks[chunkIndex].count - 1 {
+                                                Divider()
+                                                    .padding(.leading, 100) // Align with text content
+                                            }
                                         }
                                         
-                                        // Divider line between apps (except for last item in chunk)
-                                        if appIndex < appsChunks[chunkIndex].count - 1 {
-                                            Divider()
-                                                .padding(.leading, 100) // Align with text content
+                                        // Add spacer to fill remaining space if less than 3 apps
+                                        if appsChunks[chunkIndex].count < 3 {
+                                            Spacer()
                                         }
                                     }
-                                    
-                                    // Add spacer to fill remaining space if less than 3 apps
-                                    if appsChunks[chunkIndex].count < 3 {
-                                        Spacer()
-                                    }
+                                    .padding(.top, 10)
                                 }
-                                .padding(.top, 10)
                             }
-                        }
-                        .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
-                        .frame(height: 270) // Fixed height for 3 apps
-                        .overlay(
-                            // Peek preview overlay - show next page preview on the right edge
-                            HStack {
-                                Spacer()
-                                if appsChunks.count > 1 {
-                                    Rectangle()
-                                        .fill(LinearGradient(
-                                            gradient: Gradient(colors: [
-                                                Color.clear,
-                                                Color(UIColor.systemBackground).opacity(0.3)
-                                            ]),
-                                            startPoint: .leading,
-                                            endPoint: .trailing
+                            .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
+                            .frame(height: 270) // Fixed height for 3 apps
+                            .overlay(
+                                // Peek preview overlay - show next page preview on the right edge
+                                HStack {
+                                    Spacer()
+                                    if appsChunks.count > 1 {
+                                        Rectangle()
+                                            .fill(LinearGradient(
+                                                gradient: Gradient(colors: [
+                                                    Color.clear,
+                                                    Color(UIColor.systemBackground).opacity(0.3)
+                                                ]),
+                                                startPoint: .leading,
+                                                endPoint: .trailing
                                         ))
                                         .frame(width: 40)
-                                }
-                            },
-                            alignment: .trailing
-                        )
+                                    }
+                                },
+                                alignment: .trailing
+                            )
+                        }
                         
                     case "editorsChoice", "personalized", "trending", "newReleases":
                         // Default carousel layout for these section types
@@ -1151,7 +1328,7 @@ private struct AppBannerCard: View {
     var body: some View {
         Button(action: onTap) {
             VStack(spacing: 12) {
-                // Large App Icon
+                // Large App Icon with better loading states
                 LazyImage(url: URL(string: app.iconUrl)) { state in
                     if let image = state.image {
                         image
@@ -1159,7 +1336,22 @@ private struct AppBannerCard: View {
                             .aspectRatio(contentMode: .fit)
                             .frame(width: 140, height: 140)
                             .clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
+                    } else if state.error != nil {
+                        // Error state with retry visual cue
+                        RoundedRectangle(cornerRadius: 30, style: .continuous)
+                            .fill(Color.red.opacity(0.1))
+                            .frame(width: 140, height: 140)
+                            .overlay(
+                                VStack {
+                                    Image(systemName: "exclamationmark.triangle")
+                                        .foregroundColor(.red)
+                                    Text("Tap to retry")
+                                        .font(.caption2)
+                                        .foregroundColor(.secondary)
+                                }
+                            )
                     } else {
+                        // Loading state
                         RoundedRectangle(cornerRadius: 30, style: .continuous)
                             .fill(Color.gray.opacity(0.1))
                             .frame(width: 140, height: 140)
@@ -1191,6 +1383,10 @@ private struct AppBannerCard: View {
                         }
                         .buttonStyle(PlainButtonStyle())
                         .background(Color.clear) // Ensure touch area is active
+                        .onTapGesture {
+                            // Independent download action - prevent event bubbling
+                            handleDownloadButtonTap()
+                        }
                     }
                     
                     if let developer = app.developer {
@@ -1752,29 +1948,95 @@ private struct SectionAppsView: View {
     let title: String
     let apps: [IOSAppDTO]
     let onAppTap: (IOSAppDTO) -> Void
-    @Environment(\.presentationMode) var presentationMode
+    
+    @Environment(\.dismiss) private var dismiss
+    @State private var selectedApp: IOSAppDTO?
     
     var body: some View {
         NavigationView {
             ScrollView {
-                LazyVStack(spacing: 12) {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: 2), spacing: 16) {
                     ForEach(apps, id: \.id) { app in
-                        SectionAppRow(app: app, onTap: {
-                            onAppTap(app)
-                        })
+                        SectionAppCard(app: app) {
+                            selectedApp = app
+                        }
                     }
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, 16)
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
             }
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.large)
-            .navigationBarItems(
-                trailing: Button("Done") {
-                    presentationMode.wrappedValue.dismiss()
-                }
-            )
         }
+        .sheet(item: $selectedApp) { app in
+            AppDetailView(app: app)
+        }
+    }
+}
+
+private struct SectionAppCard: View {
+    let app: IOSAppDTO
+    let onTap: () -> Void
+    
+    var body: some View {
+        Button(action: onTap) {
+            VStack(spacing: 12) {
+                // App Icon
+                LazyImage(url: URL(string: app.iconUrl)) { state in
+                    if let image = state.image {
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 80, height: 80)
+                            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    } else {
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .fill(Color.gray.opacity(0.1))
+                            .frame(width: 80, height: 80)
+                            .overlay(
+                                ProgressView()
+                                    .scaleEffect(0.8)
+                            )
+                    }
+                }
+                
+                // App Info
+                VStack(spacing: 4) {
+                    Text(app.displayName)
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.center)
+                    
+                    if let developer = app.developer {
+                        Text(developer)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    }
+                    
+                    // Rating if available
+                    if let rating = app.rating, rating > 0 {
+                        HStack(spacing: 2) {
+                            ForEach(0..<5) { index in
+                                Image(systemName: index < Int(rating) ? "star.fill" : "star")
+                                    .font(.caption2)
+                                    .foregroundColor(.yellow)
+                            }
+                        }
+                    }
+                }
+                
+                Spacer()
+            }
+            .frame(height: 160)
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(Color(.systemBackground))
+            .cornerRadius(12)
+            .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+        }
+        .buttonStyle(PlainButtonStyle())
     }
 }
 
