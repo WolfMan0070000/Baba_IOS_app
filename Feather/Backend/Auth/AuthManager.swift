@@ -23,11 +23,32 @@ final class AuthManager: ObservableObject {
 
     // Keychain keys
     private let tokenService = "feather.auth.token"
+    private let refreshTokenService = "feather.auth.refresh_token"
     private let emailService = "feather.auth.email"
 
     private init() {
-        self.isAuthenticated = (try? KeychainHelper.shared.read(service: tokenService)) != nil
+        // Check if we have valid tokens
+        let hasAccessToken = (try? KeychainHelper.shared.read(service: tokenService)) != nil
+        let hasRefreshToken = (try? KeychainHelper.shared.read(service: refreshTokenService)) != nil
+        
+        // User is authenticated if they have either token
+        self.isAuthenticated = hasAccessToken || hasRefreshToken
         self.currentUserEmail = try? KeychainHelper.shared.read(service: emailService).flatMap { String(data: $0, encoding: .utf8) }
+        
+        // If we only have refresh token, try to get new access token in background
+        if !hasAccessToken && hasRefreshToken {
+            Task {
+                do {
+                    _ = try await self.refreshAccessToken()
+                    logger.info("Access token refreshed during initialization")
+                } catch {
+                    logger.error("Failed to refresh token during initialization: \(error)")
+                    await MainActor.run {
+                        self.logout()
+                    }
+                }
+            }
+        }
     }
 
     @Published private(set) var apiBaseURL: URL = {
@@ -43,10 +64,29 @@ final class AuthManager: ObservableObject {
             self.apiBaseURL = url
         }
     }
+    
+    // MARK: - Access Token
+    var accessToken: String? {
+        guard let tokenData = try? KeychainHelper.shared.read(service: tokenService) else {
+            return nil
+        }
+        return String(data: tokenData, encoding: .utf8)
+    }
+    
+    var refreshToken: String? {
+        guard let tokenData = try? KeychainHelper.shared.read(service: refreshTokenService) else {
+            return nil
+        }
+        return String(data: tokenData, encoding: .utf8)
+    }
 
     // MARK: - Models
     struct LoginUser: Decodable { let id: Int; let email: String }
-    struct LoginResponse: Decodable { let access_token: String; let user: LoginUser }
+    struct LoginResponse: Decodable { 
+        let access_token: String
+        let user: LoginUser 
+        let refresh_token: String?
+    }
     struct CertResponse: Decodable { let p12_url: String; let p12_pass: String; let mobileprovision_url: String }
     struct PageBlocksResponse<T: Decodable>: Decodable { let blocks: [T] }
     struct DefaultSourceBlock: Decodable { let url: String; let name: String?; let id: String? }
@@ -66,9 +106,30 @@ final class AuthManager: ObservableObject {
         guard (200..<300).contains(http.statusCode) else { throw AuthError.httpError(http.statusCode) }
 
         let decoded = try JSONDecoder().decode(LoginResponse.self, from: data)
+        
+        // Extract refresh token from cookies if available
+        var refreshTokenValue: String?
+        if let headerFields = http.allHeaderFields as? [String: String],
+           let cookieString = headerFields["Set-Cookie"] {
+            // Parse cookies to extract refresh_token
+            let cookies = cookieString.components(separatedBy: ",")
+            for cookie in cookies {
+                if cookie.contains("refresh_token=") {
+                    let parts = cookie.components(separatedBy: "=")
+                    if parts.count >= 2 {
+                        refreshTokenValue = parts[1].components(separatedBy: ";")[0].trimmingCharacters(in: .whitespaces)
+                    }
+                }
+            }
+        }
 
         try KeychainHelper.shared.save(data: Data(decoded.access_token.utf8), service: tokenService)
         try KeychainHelper.shared.save(data: Data(decoded.user.email.utf8), service: emailService)
+        
+        // Save refresh token if available
+        if let refreshToken = refreshTokenValue ?? decoded.refresh_token {
+            try KeychainHelper.shared.save(data: Data(refreshToken.utf8), service: refreshTokenService)
+        }
 
         await MainActor.run {
             self.isAuthenticated = true
@@ -119,21 +180,110 @@ final class AuthManager: ObservableObject {
         NetworkManager.shared.clearAllCaches()
         
         try? KeychainHelper.shared.delete(service: tokenService)
+        try? KeychainHelper.shared.delete(service: refreshTokenService)
         try? KeychainHelper.shared.delete(service: emailService)
         DispatchQueue.main.async { [weak self] in
             self?.isAuthenticated = false
             self?.currentUserEmail = nil
         }
     }
+    
+    // MARK: - Token Refresh
+    
+    func refreshAccessToken() async throws -> String {
+        guard let refreshTokenValue = refreshToken else {
+            throw AuthError.notAuthenticated
+        }
+        
+        let endpoint = apiBaseURL.appendingPathComponent("api/v1/auth/refresh-token")
+        var request = URLRequest(url: endpoint)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        // Send refresh token in cookie format
+        request.setValue("refresh_token=\(refreshTokenValue)", forHTTPHeaderField: "Cookie")
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse else { throw AuthError.invalidResponse }
+        
+        if http.statusCode == 401 {
+            // Refresh token is invalid, user needs to login again
+            await MainActor.run {
+                self.logout()
+            }
+            throw AuthError.notAuthenticated
+        }
+        
+        guard (200..<300).contains(http.statusCode) else { 
+            throw AuthError.httpError(http.statusCode) 
+        }
+        
+        struct RefreshResponse: Decodable {
+            let access_token: String
+            let user: LoginUser
+        }
+        
+        let decoded = try JSONDecoder().decode(RefreshResponse.self, from: data)
+        
+        // Save new access token
+        try KeychainHelper.shared.save(data: Data(decoded.access_token.utf8), service: tokenService)
+        
+        logger.info("Access token refreshed successfully")
+        return decoded.access_token
+    }
+    
+    func getValidAccessToken() async throws -> String {
+        // First try to get current access token
+        if let currentToken = accessToken {
+            // Check if token is expired
+            if !isTokenExpired(currentToken) {
+                logger.info("Using existing valid access token")
+                return currentToken
+            }
+            logger.info("Access token is expired, refreshing...")
+        } else {
+            logger.info("No access token found, refreshing...")
+        }
+        
+        // No access token or expired, try to refresh
+        let newToken = try await refreshAccessToken()
+        logger.info("Successfully refreshed access token")
+        return newToken
+    }
+    
+    private func isTokenExpired(_ token: String) -> Bool {
+        // Simple JWT expiration check without full validation
+        let parts = token.components(separatedBy: ".")
+        guard parts.count == 3 else { return true }
+        
+        // Decode the payload (second part)
+        let payloadPart = parts[1]
+        // Add padding if needed
+        var payload = payloadPart
+        while payload.count % 4 != 0 {
+            payload += "="
+        }
+        
+        guard let data = Data(base64Encoded: payload),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let exp = json["exp"] as? TimeInterval else {
+            return true // Assume expired if we can't parse
+        }
+        
+        // Check if token expires in next 60 seconds (refresh proactively)
+        return Date().timeIntervalSince1970 >= (exp - 60)
+    }
 
     func fetchCertificateAndInstall() async throws {
         logger.info("Starting certificate fetch and install...")
         
-        guard let token = try KeychainHelper.shared.read(service: tokenService) else { 
-            logger.error("No auth token found")
-            throw AuthError.notAuthenticated 
+        let tokenString: String
+        do {
+            tokenString = try await getValidAccessToken()
+        } catch {
+            logger.error("Failed to get valid access token for certificate request")
+            throw AuthError.notAuthenticated
         }
-        let tokenString = String(decoding: token, as: UTF8.self)
 
         let endpoint = apiBaseURL.appendingPathComponent("api/v1/certs/me")
         logger.info("Requesting certificate from: \(endpoint.absoluteString)")
@@ -273,11 +423,15 @@ final class AuthManager: ObservableObject {
         var request = URLRequest(url: url)
         request.cachePolicy = .reloadIgnoringLocalCacheData
         
-        // Add auth token if available
-        if let token = try? KeychainHelper.shared.read(service: tokenService) {
-            let tokenString = String(decoding: token, as: UTF8.self)
-            request.setValue("Bearer \(tokenString)", forHTTPHeaderField: "Authorization")
-            logger.info("Added auth token to download request")
+        // Add auth token using token refresh mechanism for authenticated endpoints
+        if url.absoluteString.contains(apiBaseURL.absoluteString) {
+            do {
+                let tokenString = try await getValidAccessToken()
+                request.setValue("Bearer \(tokenString)", forHTTPHeaderField: "Authorization")
+                logger.info("Added refreshed auth token to download request")
+            } catch {
+                logger.warning("Failed to get auth token for download, proceeding without authentication")
+            }
         }
         
         do {

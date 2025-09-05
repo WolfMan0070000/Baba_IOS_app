@@ -14,6 +14,7 @@ class NetworkManager: ObservableObject {
     
     private let cache = DataCacheManager.shared
     private let session: URLSession
+    private var csrfToken: String?
     
     private init() {
         let config = URLSessionConfiguration.default
@@ -219,6 +220,120 @@ class NetworkManager: ObservableObject {
         print("🔐 NetworkManager: Invalidating cache on login for \(baseURL)")
         clearHomepageCache(baseURL: baseURL)
     }
+    
+    // MARK: - CSRF Token Management
+    
+    private func fetchCSRFToken(baseURL: String) async throws -> String {
+        if let existingToken = csrfToken {
+            return existingToken
+        }
+        
+        guard let url = URL(string: "\(baseURL)/api/csrf-token") else {
+            throw NetworkError.invalidURL
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        
+        let (data, response) = try await session.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw NetworkError.invalidResponse
+        }
+        
+        guard 200...299 ~= httpResponse.statusCode else {
+            throw NetworkError.serverError(httpResponse.statusCode)
+        }
+        
+        struct CSRFResponse: Codable {
+            let csrfToken: String
+        }
+        
+        let csrfResponse = try JSONDecoder().decode(CSRFResponse.self, from: data)
+        self.csrfToken = csrfResponse.csrfToken
+        return csrfResponse.csrfToken
+    }
+    
+    
+    // MARK: - Review API Methods
+    
+    func fetchAppReviews(appId: Int, baseURL: String) async throws -> [Review] {
+        return try await fetchWithCache(
+            "\(baseURL)/api/v1/reviews/\(appId)",
+            type: [Review].self,
+            cacheKey: DataCacheManager.CacheKey.appReviews(appId: appId, baseURL: baseURL),
+            cacheExpiry: 300, // 5 minutes cache for reviews
+            forceRefresh: false
+        )
+    }
+    
+    func submitAppReview(appId: Int, userName: String, rating: Int, text: String, baseURL: String) async throws -> Review {
+        return try await submitAppReviewWithRetry(appId: appId, userName: userName, rating: rating, text: text, baseURL: baseURL, isRetry: false)
+    }
+    
+    private func submitAppReviewWithRetry(appId: Int, userName: String, rating: Int, text: String, baseURL: String, isRetry: Bool) async throws -> Review {
+        guard let url = URL(string: "\(baseURL)/api/v1/reviews/\(appId)") else {
+            throw NetworkError.invalidURL
+        }
+        
+        let reviewData: [String: Any] = [
+            "userName": userName,
+            "rating": rating,
+            "text": text
+        ]
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        // Add mobile app identifier to bypass CSRF for mobile requests
+        request.setValue("true", forHTTPHeaderField: "X-Mobile-App")
+        
+        // Add authentication using token refresh mechanism
+        do {
+            let token = try await AuthManager.shared.getValidAccessToken()
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        } catch {
+            throw ReviewError.authenticationRequired
+        }
+        
+        request.httpBody = try JSONSerialization.data(withJSONObject: reviewData)
+        
+        let (data, response) = try await session.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw NetworkError.invalidResponse
+        }
+        
+        // Handle 401 errors by trying to refresh token once more
+        if httpResponse.statusCode == 401 && !isRetry {
+            do {
+                _ = try await AuthManager.shared.refreshAccessToken()
+                // Retry the request with new token
+                return try await submitAppReviewWithRetry(appId: appId, userName: userName, rating: rating, text: text, baseURL: baseURL, isRetry: true)
+            } catch {
+                throw ReviewError.authenticationRequired
+            }
+        }
+        
+        guard 200...299 ~= httpResponse.statusCode else {
+            if httpResponse.statusCode == 409 {
+                throw ReviewError.alreadyReviewed
+            }
+            if httpResponse.statusCode == 401 {
+                throw ReviewError.authenticationRequired
+            }
+            throw NetworkError.serverError(httpResponse.statusCode)
+        }
+        
+        let review = try JSONDecoder().decode(Review.self, from: data)
+        
+        // Clear reviews cache to refresh the list
+        let cacheKey = DataCacheManager.CacheKey.appReviews(appId: appId, baseURL: baseURL)
+        cache.remove(key: cacheKey)
+        
+        return review
+    }
 
     // MARK: - Private Methods
     
@@ -271,6 +386,25 @@ enum NetworkError: LocalizedError {
             return "Server error: \(code)"
         case .decodingError:
             return "Failed to decode response"
+        }
+    }
+}
+
+// MARK: - Review Errors
+
+enum ReviewError: LocalizedError {
+    case alreadyReviewed
+    case invalidRating
+    case authenticationRequired
+    
+    var errorDescription: String? {
+        switch self {
+        case .alreadyReviewed:
+            return String(localized: "You have already reviewed this app")
+        case .invalidRating:
+            return String(localized: "Rating must be between 1 and 5")
+        case .authenticationRequired:
+            return String(localized: "Please log in to submit a review")
         }
     }
 }

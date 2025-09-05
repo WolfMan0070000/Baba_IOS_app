@@ -275,5 +275,9 @@ extension DataCacheManager {
         static func categoryApps(categoryId: Int, baseURL: String) -> String {
             return "category_apps_\(categoryId)_\(baseURL.hash)"
         }
+        
+        static func appReviews(appId: Int, baseURL: String) -> String {
+            return "app_reviews_\(appId)_\(baseURL.hash)"
+        }
     }
 }

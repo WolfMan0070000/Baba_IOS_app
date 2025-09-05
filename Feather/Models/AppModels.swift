@@ -162,7 +162,9 @@ struct AppCategory: Codable, Identifiable, Hashable {
 struct Review: Codable, Identifiable, Hashable {
     let id: Int
     let rating: Double
+    let text: String?
     let comment: String?
+    let userName: String?
     let userId: Int?
     let appId: Int
     let createdAt: String?

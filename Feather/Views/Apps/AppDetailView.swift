@@ -14,6 +14,12 @@ struct AppDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var selectedScreenshotURL: String?
     @State private var showingScreenshotViewer = false
+    @State private var reviews: [Review] = []
+    @State private var isLoadingReviews = false
+    @State private var showingAllReviews = false
+    @State private var showingWriteReview = false
+    @StateObject private var networkManager = NetworkManager.shared
+    @ObservedObject private var authManager = AuthManager.shared
     
     var body: some View {
         NavigationView {
@@ -34,6 +40,9 @@ struct AppDetailView: View {
                     
                     // Information Section
                     informationSection
+                    
+                    // Reviews Section
+                    reviewsSection
                     
                     Spacer(minLength: 100) // Space for floating download button
                 }
@@ -56,6 +65,17 @@ struct AppDetailView: View {
             if let imageUrl = selectedScreenshotURL {
                 ScreenshotDetailView(imageUrl: imageUrl)
             }
+        }
+        .sheet(isPresented: $showingAllReviews) {
+            AllReviewsView(app: app, reviews: reviews)
+        }
+        .sheet(isPresented: $showingWriteReview) {
+            WriteReviewView(app: app) { newReview in
+                reviews.insert(newReview, at: 0)
+            }
+        }
+        .onAppear {
+            loadReviews()
         }
     }
     
@@ -217,6 +237,118 @@ struct AppDetailView: View {
                 
                 if let category = app.category {
                     InfoRow(title: .localized("Category"), value: category.displayName)
+                }
+            }
+        }
+    }
+    
+    private var reviewsSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text(.localized("Reviews"))
+                    .font(.headline)
+                
+                Spacer()
+                
+                if !reviews.isEmpty {
+                    Button(action: { showingAllReviews = true }) {
+                        Text(.localized("See All"))
+                            .font(.subheadline)
+                            .foregroundColor(.blue)
+                    }
+                }
+            }
+            
+            if isLoadingReviews {
+                HStack {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                    Text(.localized("Loading reviews..."))
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                .padding(.vertical, 20)
+            } else if reviews.isEmpty {
+                VStack(spacing: 12) {
+                    Image(systemName: "star")
+                        .font(.title2)
+                        .foregroundColor(.secondary)
+                    Text(.localized("No reviews yet"))
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    Text(.localized("Be the first to review this app!"))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    if authManager.isAuthenticated {
+                        Button(action: { showingWriteReview = true }) {
+                            Text(.localized("Write a Review"))
+                                .font(.subheadline.weight(.medium))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 8)
+                                .background(Color.blue)
+                                .clipShape(Capsule())
+                        }
+                    } else {
+                        Text(.localized("Please log in to write a review"))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 20)
+            } else {
+                VStack(spacing: 12) {
+                    // Write Review Button
+                    if authManager.isAuthenticated {
+                        Button(action: { showingWriteReview = true }) {
+                            HStack {
+                                Image(systemName: "square.and.pencil")
+                                Text(.localized("Write a Review"))
+                            }
+                            .font(.subheadline.weight(.medium))
+                            .foregroundColor(.blue)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(Color.blue.opacity(0.1))
+                            .clipShape(Capsule())
+                        }
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                    }
+                    
+                    ForEach(reviews.prefix(3), id: \.id) { review in
+                        ReviewRowView(review: review)
+                        
+                        if review.id != reviews.prefix(3).last?.id {
+                            Divider()
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    private func loadReviews() {
+        guard !isLoadingReviews else { return }
+        
+        isLoadingReviews = true
+        
+        Task {
+            do {
+                let fetchedReviews = try await networkManager.fetchAppReviews(
+                    appId: app.id,
+                    baseURL: authManager.apiBaseURL.absoluteString
+                )
+                
+                await MainActor.run {
+                    self.reviews = fetchedReviews
+                    self.isLoadingReviews = false
+                }
+            } catch {
+                print("Failed to load reviews: \(error)")
+                await MainActor.run {
+                    self.isLoadingReviews = false
                 }
             }
         }
@@ -434,6 +566,274 @@ private struct ScreenshotDetailView: View {
                         dismiss()
                     }
                     .foregroundColor(.white)
+                }
+            }
+        }
+    }
+}
+
+private struct ReviewRowView: View {
+    let review: Review
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 4) {
+                        ForEach(0..<5) { index in
+                            Image(systemName: index < Int(review.rating.rounded()) ? "star.fill" : "star")
+                                .font(.caption)
+                                .foregroundColor(.yellow)
+                        }
+                        
+                        Text(String(format: "%.1f", review.rating))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Text(review.userName ?? "Anonymous User")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                
+                Spacer()
+                
+                if let createdAt = review.createdAt {
+                    Text(formatReviewDate(createdAt))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+            
+            if let reviewText = review.text ?? review.comment, !reviewText.isEmpty {
+                Text(reviewText)
+                    .font(.body)
+                    .lineLimit(3)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+    
+    private func formatReviewDate(_ dateString: String) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+        
+        if let date = formatter.date(from: dateString) {
+            let displayFormatter = DateFormatter()
+            displayFormatter.dateStyle = .medium
+            return displayFormatter.string(from: date)
+        }
+        
+        return dateString
+    }
+}
+
+private struct AllReviewsView: View {
+    let app: IOSAppDTO
+    let reviews: [Review]
+    @Environment(\.dismiss) private var dismiss
+    
+    var body: some View {
+        NavigationView {
+            ScrollView {
+                VStack(spacing: 16) {
+                    ForEach(reviews, id: \.id) { review in
+                        ReviewRowView(review: review)
+                        Divider()
+                    }
+                }
+                .padding()
+            }
+            .navigationTitle("Reviews")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+}
+
+private struct WriteReviewView: View {
+    let app: IOSAppDTO
+    let onReviewSubmitted: (Review) -> Void
+    @Environment(\.dismiss) private var dismiss
+    
+    @State private var rating: Int = 5
+    @State private var reviewText: String = ""
+    @State private var userName: String = ""
+    @State private var isSubmitting = false
+    @State private var errorMessage: String?
+    
+    @StateObject private var networkManager = NetworkManager.shared
+    @ObservedObject private var authManager = AuthManager.shared
+    
+    var body: some View {
+        NavigationView {
+            Form {
+                Section {
+                    VStack(alignment: .leading, spacing: 16) {
+                        // App info
+                        HStack {
+                            LazyImage(url: URL(string: app.iconUrl)) { state in
+                                if let image = state.image {
+                                    image
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fit)
+                                        .frame(width: 60, height: 60)
+                                        .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+                                } else {
+                                    RoundedRectangle(cornerRadius: 13, style: .continuous)
+                                        .fill(Color.gray.opacity(0.1))
+                                        .frame(width: 60, height: 60)
+                                }
+                            }
+                            
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(app.displayName)
+                                    .font(.headline)
+                                
+                                if let developer = app.developer {
+                                    Text(developer)
+                                        .font(.subheadline)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                            
+                            Spacer()
+                        }
+                        
+                        // Rating Selection
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(.localized("Rating"))
+                                .font(.headline)
+                            
+                            HStack(spacing: 8) {
+                                ForEach(1...5, id: \.self) { star in
+                                    Button(action: { rating = star }) {
+                                        Image(systemName: star <= rating ? "star.fill" : "star")
+                                            .font(.title2)
+                                            .foregroundColor(star <= rating ? .yellow : .gray)
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                }
+                                
+                                Spacer()
+                                
+                                Text(ratingText)
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+                }
+                
+                Section {
+                    TextField(.localized("Your name (optional)"), text: $userName)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                } header: {
+                    Text(.localized("Name"))
+                }
+                
+                Section {
+                    TextEditor(text: $reviewText)
+                        .frame(minHeight: 100)
+                        .overlay(alignment: .topLeading) {
+                            if reviewText.isEmpty {
+                                Text(.localized("Write your review here..."))
+                                    .foregroundColor(.secondary)
+                                    .padding(.top, 8)
+                                    .padding(.leading, 4)
+                                    .allowsHitTesting(false)
+                            }
+                        }
+                } header: {
+                    Text(.localized("Review"))
+                }
+                
+                if let errorMessage = errorMessage {
+                    Section {
+                        Text(errorMessage)
+                            .foregroundColor(.red)
+                    }
+                }
+            }
+            .navigationTitle(.localized("Write Review"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(.localized("Cancel")) {
+                        dismiss()
+                    }
+                }
+                
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(.localized("Submit")) {
+                        submitReview()
+                    }
+                    .disabled(isSubmitting || reviewText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+            }
+            .disabled(isSubmitting)
+        }
+    }
+    
+    private var ratingText: String {
+        switch rating {
+        case 1: return String(localized: "Poor")
+        case 2: return String(localized: "Fair")
+        case 3: return String(localized: "Good")
+        case 4: return String(localized: "Very Good")
+        case 5: return String(localized: "Excellent")
+        default: return ""
+        }
+    }
+    
+    private func submitReview() {
+        guard !isSubmitting else { return }
+        guard !reviewText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            errorMessage = String(localized: "Please write a review")
+            return
+        }
+        
+        errorMessage = nil
+        isSubmitting = true
+        
+        let displayName = userName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty 
+            ? "Anonymous User" 
+            : userName.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        Task {
+            do {
+                let review = try await networkManager.submitAppReview(
+                    appId: app.id,
+                    userName: displayName,
+                    rating: rating,
+                    text: reviewText.trimmingCharacters(in: .whitespacesAndNewlines),
+                    baseURL: authManager.apiBaseURL.absoluteString
+                )
+                
+                await MainActor.run {
+                    onReviewSubmitted(review)
+                    dismiss()
+                }
+            } catch ReviewError.alreadyReviewed {
+                await MainActor.run {
+                    errorMessage = String(localized: "You have already reviewed this app")
+                    isSubmitting = false
+                }
+            } catch ReviewError.authenticationRequired {
+                await MainActor.run {
+                    errorMessage = String(localized: "Please log in to submit a review")
+                    isSubmitting = false
+                }
+            } catch {
+                await MainActor.run {
+                    errorMessage = error.localizedDescription
+                    isSubmitting = false
                 }
             }
         }
