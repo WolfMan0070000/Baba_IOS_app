@@ -8,6 +8,7 @@
 import SwiftUI
 import NukeUI
 
+
 struct AppDetailView: View {
     let app: IOSAppDTO
     @ObservedObject private var downloadManager = DownloadManager.shared

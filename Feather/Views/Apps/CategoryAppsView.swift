@@ -8,6 +8,7 @@
 import SwiftUI
 import NukeUI
 
+
 struct CategoryAppsView: View {
     let category: AppCategory
     let apps: [IOSAppDTO]

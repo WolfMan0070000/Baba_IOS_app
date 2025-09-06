@@ -1,0 +1,20 @@
+Starting certificate fetch after successful login...
+Starting certificate fetch and install...
+Using existing valid access token
+Requesting certificate from: https://8970a20b23b7.ngrok-free.app/api/v1/certs/me
+Certificate response status: 200
+Raw certificate response: {"p12_url":"https://309c397a633f.ngrok-free.app/static/certs/1-1757026328123-d3e76c288099.p12","p12_pass":"www.myud.ir","mobileprovision_url":"https://309c397a633f.ngrok-free.app/static/certs/1-1757026328126-f50c4dd48c9a.mobileprovision"}
+Certificate info decoded - P12: https://309c397a633f.ngrok-free.app/static/certs/1-1757026328123-d3e76c288099.p12, MP: https://309c397a633f.ngrok-free.app/static/certs/1-1757026328126-f50c4dd48c9a.mobileprovision, Pass: ***
+Resolving URL: https://309c397a633f.ngrok-free.app/static/certs/1-1757026328123-d3e76c288099.p12
+URL is already absolute: https://309c397a633f.ngrok-free.app/static/certs/1-1757026328123-d3e76c288099.p12
+Resolving URL: https://309c397a633f.ngrok-free.app/static/certs/1-1757026328126-f50c4dd48c9a.mobileprovision
+URL is already absolute: https://309c397a633f.ngrok-free.app/static/certs/1-1757026328126-f50c4dd48c9a.mobileprovision
+Resolved URLs - P12: https://309c397a633f.ngrok-free.app/static/certs/1-1757026328123-d3e76c288099.p12, MP: https://309c397a633f.ngrok-free.app/static/certs/1-1757026328126-f50c4dd48c9a.mobileprovision
+Starting file downloads...
+Downloading file from: https://309c397a633f.ngrok-free.app/static/certs/1-1757026328123-d3e76c288099.p12
+Download response status: 404
+Download failed with HTTP status: 404
+Download failed with error: Feather.AuthError.downloadFailed
+Certificate import failed with error: Feather.AuthError.downloadFailed
+-[RTIInputSystemClient remoteTextInputSessionWithID:performInputOperation:]  perform input operation requires a valid sessionID. inputModality = Keyboard, inputOperation = <null selector>, customInfoType = UIEmojiSearchOperations
+-[RTIInputSystemClient remoteTextInputSessionWithID:performInputOperation:]  perform input operation requires a valid sessionID. inputModality = Keyboard, inputOperation = <null selector>, customInfoType = UIEmojiSearchOperations

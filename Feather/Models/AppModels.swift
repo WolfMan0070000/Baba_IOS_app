@@ -196,6 +196,8 @@ struct HomepageSectionDTO: Codable {
     let categoryIds: [Int]?
     let enabled: Bool
     let order: Int
+    let autoScroll: Bool?
+    let scrollInterval: Int?
 
     var localizedTitle: String? {
         let lang = UserDefaults.standard.string(forKey: "Feather.appLanguage") ?? "fa"

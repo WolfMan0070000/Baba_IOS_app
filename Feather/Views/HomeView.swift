@@ -29,6 +29,7 @@ import SwiftUI
 import NimbleViews
 import NukeUI
 
+
 // MARK: - Section Apps Data Model
 struct SectionAppsData: Identifiable {
     let id = UUID()
@@ -160,6 +161,27 @@ struct HomeView: View {
                 // User explicitly pulled to refresh - get fresh data
                 await loadContent(force: true, reason: "pull_to_refresh")
             }
+            .overlay(
+                // Show refresh indicator when manually refreshing
+                Group {
+                    if isLoading && hasInitialLoad {
+                        VStack {
+                            Spacer()
+                            HStack {
+                                Spacer()
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .blue))
+                                    .scaleEffect(0.8)
+                                Text(String(localized: "Refreshing..."))
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Spacer()
+                            }
+                            .padding(.bottom, 20)
+                        }
+                    }
+                }
+            )
             .onChange(of: authManager.apiBaseURL) { _ in
                 // API base URL changed (different server) - clear cache and reload
                 networkManager.clearHomepageCache(baseURL: authManager.apiBaseURL.absoluteString)
@@ -215,11 +237,15 @@ struct HomeView: View {
         VStack(spacing: 16) {
             ProgressView()
                 .scaleEffect(1.2)
+                .progressViewStyle(CircularProgressViewStyle(tint: .blue))
             Text(String(localized: "Loading apps..."))
                 .font(.subheadline)
                 .foregroundColor(.secondary)
+                .accessibilityLabel(String(localized: "Loading apps"))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(UIColor.systemBackground))
+        .accessibilityElement(children: .combine)
     }
     
     private var mainContentView: some View {
@@ -254,12 +280,17 @@ struct HomeView: View {
                             }, onSectionTap: showSectionApps)
                         }
                     }
+                    .id(section.id) // Add ID for better SwiftUI diffing
                 }
                 
                 // Bottom spacing
                 Spacer(minLength: 100)
             }
             .padding(.top, 20)
+        }
+        .scrollIndicators(.hidden) // Cleaner UI
+        .refreshable {
+            await loadContent(force: true, reason: "pull_to_refresh")
         }
 
     }
@@ -269,15 +300,18 @@ struct HomeView: View {
             Image(systemName: "app.badge")
                 .font(.system(size: 80))
                 .foregroundColor(.secondary)
+                .accessibilityHidden(true)
             
             VStack(spacing: 8) {
                 Text(String(localized: "No Apps Available"))
                     .font(.title2.bold())
+                    .accessibilityLabel(String(localized: "No apps available"))
                 
                 Text(String(localized: "Please check your connection and try again"))
                     .font(.body)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
+                    .accessibilityLabel(String(localized: "Please check your connection and try again"))
             }
             
             Button(String(localized: "Retry")) {
@@ -285,9 +319,12 @@ struct HomeView: View {
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
+            .accessibilityLabel(String(localized: "Retry loading apps"))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding()
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(String(localized: "Empty state with no apps available"))
     }
     
     // MARK: - Data Loading
@@ -497,6 +534,12 @@ struct HomeView: View {
                     // Show error message for critical failures
                     if reason == "initial_app_launch" || reason == "user_retry" {
                         self.errorMessage = "Failed to load app data: \(error.localizedDescription)"
+                        self.showingErrorAlert = true
+                    }
+                } else {
+                    // For refresh actions, show a temporary error message
+                    if reason == "pull_to_refresh" || reason == "user_retry" {
+                        self.errorMessage = "Failed to refresh data: \(error.localizedDescription)"
                         self.showingErrorAlert = true
                     }
                 }
@@ -1033,6 +1076,18 @@ private struct AppSectionView: View {
                         
                         Spacer()
                         
+                        // Auto-swap indicator
+                        if section.autoScroll == true {
+                            HStack(spacing: 4) {
+                                Image(systemName: "arrow.triangle.2.circlepath")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Text("\(Int((section.scrollInterval ?? 7000) / 1000))s")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        
                         Image(systemName: "chevron.right")
                             .font(.headline)
                             .foregroundColor(.secondary)
@@ -1042,171 +1097,27 @@ private struct AppSectionView: View {
                 .padding(.horizontal, 20)
             }
             
-            // Apps List with different layouts based on section type
+            // Apps List with auto-swap capability
             if let appIds = section.appIds {
                 let apps = appIds.compactMap { id in
                     appsById[id] ?? appsById.values.first(where: { "\($0.id)" == id })
                 }
                 
                 if !apps.isEmpty {
-                    switch section.type {
-                    case "grid":
-                        // Grid layout (3 columns)
-                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: 3), spacing: 16) {
-                            ForEach(apps, id: \.id) { app in
-                                AppGridCard(app: app) {
-                                    onAppTap(app)
-                                }
-                            }
-                        }
-                        .padding(.horizontal, 20)
-                        
-                    case "banner":
-                        // Banner layout (large cards)
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 16) {
-                                ForEach(apps, id: \.id) { app in
-                                    AppBannerCard(app: app) {
-                                        onAppTap(app)
-                                    }
-                                }
-                            }
-                            .padding(.horizontal, 20)
-                        }
-                        
-                    case "hero":
-                        // Hero layout - TabView with smooth paging like must-have cards
-                        let heroAppsChunks = Array(apps).chunked(into: 2) // Split hero apps into groups of 2 for better display
-                        
-                        // Calculate height separately to avoid type checker complexity
-                        let heroHeight: CGFloat = {
-                            guard !heroAppsChunks.isEmpty, !heroAppsChunks[0].isEmpty else { return 200 }
-                            let cardsPerPage = heroAppsChunks[0].count
-                            let cardHeight = 160
-                            let spacing = 16
-                            let padding = 40
-                            return CGFloat(cardsPerPage * cardHeight + (cardsPerPage - 1) * spacing + padding)
-                        }()
-                        
-                        if !heroAppsChunks.isEmpty {
-                            TabView {
-                                ForEach(0..<heroAppsChunks.count, id: \.self) { chunkIndex in
-                                    VStack(spacing: 16) {
-                                        ForEach(0..<heroAppsChunks[chunkIndex].count, id: \.self) { appIndex in
-                                            let app = heroAppsChunks[chunkIndex][appIndex]
-                                            AppHeroCard(app: app) {
-                                                onAppTap(app)
-                                            }
-                                        }
-                                        
-                                        // Add spacer to fill remaining space if less than 2 apps
-                                        if heroAppsChunks[chunkIndex].count < 2 {
-                                            Spacer()
-                                        }
-                                    }
-                                    .padding(.horizontal, 20)
-                                }
-                            }
-                        .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
-                        .frame(height: heroHeight)
-                        .overlay(
-                            // Peek preview overlay - show next page preview on the right edge
-                            HStack {
-                                Spacer()
-                                if heroAppsChunks.count > 1 {
-                                    Rectangle()
-                                        .fill(LinearGradient(
-                                            gradient: Gradient(colors: [
-                                                Color.clear,
-                                                Color(UIColor.systemBackground).opacity(0.3)
-                                            ]),
-                                            startPoint: .leading,
-                                            endPoint: .trailing
-                                        ))
-                                        .frame(width: 40)
-                                    }
-                                },
-                                alignment: .trailing
-                            )
-                        }
-                        
-                    case "mustHave":
-                        // Must-Have Apps layout (App Store style) - Paginated groups of 3 with TabView
-                        let appsChunks = Array(apps).chunked(into: 3) // Split apps into groups of 3
-                        
-                        if !appsChunks.isEmpty {
-                            TabView {
-                                ForEach(0..<appsChunks.count, id: \.self) { chunkIndex in
-                                    VStack(spacing: 0) {
-                                        ForEach(0..<appsChunks[chunkIndex].count, id: \.self) { appIndex in
-                                            let app = appsChunks[chunkIndex][appIndex]
-                                            AppMustHaveCard(app: app) {
-                                                onAppTap(app)
-                                            }
-                                            
-                                            // Divider line between apps (except for last item in chunk)
-                                            if appIndex < appsChunks[chunkIndex].count - 1 {
-                                                Divider()
-                                                    .padding(.leading, 100) // Align with text content
-                                            }
-                                        }
-                                        
-                                        // Add spacer to fill remaining space if less than 3 apps
-                                        if appsChunks[chunkIndex].count < 3 {
-                                            Spacer()
-                                        }
-                                    }
-                                    .padding(.top, 10)
-                                }
-                            }
-                            .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
-                            .frame(height: 270) // Fixed height for 3 apps
-                            .overlay(
-                                // Peek preview overlay - show next page preview on the right edge
-                                HStack {
-                                    Spacer()
-                                    if appsChunks.count > 1 {
-                                        Rectangle()
-                                            .fill(LinearGradient(
-                                                gradient: Gradient(colors: [
-                                                    Color.clear,
-                                                    Color(UIColor.systemBackground).opacity(0.3)
-                                                ]),
-                                                startPoint: .leading,
-                                                endPoint: .trailing
-                                        ))
-                                        .frame(width: 40)
-                                    }
-                                },
-                                alignment: .trailing
-                            )
-                        }
-                        
-                    case "editorsChoice", "personalized", "trending", "newReleases":
-                        // Default carousel layout for these section types
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 16) {
-                                ForEach(apps, id: \.id) { app in
-                                    AppListCard(app: app) {
-                                        onAppTap(app)
-                                    }
-                                }
-                            }
-                            .padding(.horizontal, 20)
-                        }
-                        
-                    default:
-                        // Default carousel layout (horizontal scroll)
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 16) {
-                                ForEach(apps, id: \.id) { app in
-                                    AppListCard(app: app) {
-                                        onAppTap(app)
-                                    }
-                                }
-                            }
-                            .padding(.horizontal, 20)
-                        }
+                    // Use AutoSwapSectionContent for sections with auto-swap enabled
+                    if section.autoScroll == true {
+                        AutoSwapSectionContent(
+                            section: section,
+                            apps: apps,
+                            onAppTap: onAppTap
+                        )
+                    } else {
+                        // Use regular static content
+                        StaticSectionContent(
+                            section: section,
+                            apps: apps,
+                            onAppTap: onAppTap
+                        )
                     }
                 } else {
                     // No apps configured
@@ -1215,6 +1126,275 @@ private struct AppSectionView: View {
                         .foregroundColor(.secondary)
                         .padding(.horizontal, 20)
                 }
+            }
+        }
+    }
+}
+// MARK: - Auto-Swap Section Content
+private struct AutoSwapSectionContent: View {
+    let section: HomepageSectionDTO
+    let apps: [IOSAppDTO]
+    let onAppTap: (IOSAppDTO) -> Void
+    
+    @State private var currentPage = 0
+    @State private var timer: Timer?
+    
+    // Calculate how many apps to show per page based on section type
+    private var appsPerPage: Int {
+        switch section.type {
+        case "grid":
+            return 6 // 2 rows of 3 apps
+        case "banner":
+            return 3 // 3 large banner cards
+        case "hero":
+            return 2 // 2 hero cards
+        case "mustHave":
+            return 3 // 3 must-have cards
+        default:
+            return 5 // Default for carousel and others
+        }
+    }
+    
+    // Split apps into pages
+    private var appPages: [[IOSAppDTO]] {
+        let chunks = Array(apps).chunkedInto(appsPerPage)
+        return chunks.isEmpty ? [[]] : chunks
+    }
+    
+    private var currentApps: [IOSAppDTO] {
+        guard !appPages.isEmpty, currentPage < appPages.count else { return [] }
+        return appPages[currentPage]
+    }
+    
+    var body: some View {
+        VStack(spacing: 8) {
+            // Main content with current apps
+            StaticSectionContent(
+                section: section,
+                apps: currentApps,
+                onAppTap: onAppTap
+            )
+            
+            // Page indicator for auto-swap sections with multiple pages
+            if appPages.count > 1 {
+                HStack(spacing: 6) {
+                    ForEach(0..<appPages.count, id: \.self) { index in
+                        Circle()
+                            .fill(index == currentPage ? Color.primary : Color.secondary.opacity(0.3))
+                            .frame(width: 6, height: 6)
+                            .animation(.easeInOut(duration: 0.3), value: currentPage)
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 8)
+            }
+        }
+        .onAppear {
+            startAutoSwap()
+        }
+        .onDisappear {
+            stopAutoSwap()
+        }
+        .onChange(of: section.id) { _ in
+            // Restart timer if section changes
+            stopAutoSwap()
+            currentPage = 0
+            startAutoSwap()
+        }
+    }
+    
+    private func startAutoSwap() {
+        guard appPages.count > 1,
+              let interval = section.scrollInterval,
+              interval > 0 else { return }
+        
+        let timeInterval = TimeInterval(interval) / 1000.0 // Convert milliseconds to seconds
+        
+        timer = Timer.scheduledTimer(withTimeInterval: timeInterval, repeats: true) { _ in
+            withAnimation(.easeInOut(duration: 0.5)) {
+                currentPage = (currentPage + 1) % appPages.count
+            }
+        }
+    }
+    
+    private func stopAutoSwap() {
+        timer?.invalidate()
+        timer = nil
+    }
+}
+
+// MARK: - Static Section Content (No Auto-Swap)
+private struct StaticSectionContent: View {
+    let section: HomepageSectionDTO
+    let apps: [IOSAppDTO]
+    let onAppTap: (IOSAppDTO) -> Void
+    
+    var body: some View {
+        switch section.type {
+        case "grid":
+            // Grid layout (3 columns)
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: 3), spacing: 16) {
+                ForEach(apps, id: \.id) { app in
+                    AppGridCard(app: app) {
+                        onAppTap(app)
+                    }
+                }
+            }
+            .padding(.horizontal, 20)
+            
+        case "banner":
+            // Banner layout (large cards)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 16) {
+                    ForEach(apps, id: \.id) { app in
+                        AppBannerCard(app: app) {
+                            onAppTap(app)
+                        }
+                    }
+                }
+                .padding(.horizontal, 20)
+            }
+            
+        case "hero":
+            // Hero layout - TabView with smooth paging like must-have cards
+            let heroAppsChunks = Array(apps).chunkedInto(2) // Split hero apps into groups of 2 for better display
+            
+            // Calculate height separately to avoid type checker complexity
+            let heroHeight: CGFloat = {
+                guard !heroAppsChunks.isEmpty, !heroAppsChunks[0].isEmpty else { return 200 }
+                let cardsPerPage = heroAppsChunks[0].count
+                let cardHeight = 160
+                let spacing = 16
+                let padding = 40
+                return CGFloat(cardsPerPage * cardHeight + (cardsPerPage - 1) * spacing + padding)
+            }()
+            
+            if !heroAppsChunks.isEmpty {
+                TabView {
+                    ForEach(0..<heroAppsChunks.count, id: \.self) { chunkIndex in
+                        VStack(spacing: 16) {
+                            ForEach(0..<heroAppsChunks[chunkIndex].count, id: \.self) { appIndex in
+                                let app = heroAppsChunks[chunkIndex][appIndex]
+                                AppHeroCard(app: app) {
+                                    onAppTap(app)
+                                }
+                            }
+                            
+                            // Add spacer to fill remaining space if less than 2 apps
+                            if heroAppsChunks[chunkIndex].count < 2 {
+                                Spacer()
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                    }
+                }
+            .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
+            .frame(height: heroHeight)
+            .overlay(
+                // Peek preview overlay - show next page preview on the right edge
+                HStack {
+                    Spacer()
+                    if heroAppsChunks.count > 1 {
+                        Rectangle()
+                            .fill(LinearGradient(
+                                gradient: Gradient(colors: [
+                                    Color.clear,
+                                    Color(UIColor.systemBackground).opacity(0.3)
+                                ]),
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            ))
+                            .frame(width: 40)
+                        }
+                    },
+                    alignment: .trailing
+                )
+            }
+            
+        case "mustHave":
+            // Must-Have Apps layout (App Store style) - Paginated groups of 3 with TabView
+            let appsChunks = Array(apps).chunkedInto(3) // Split apps into groups of 3
+            
+            if !appsChunks.isEmpty {
+                TabView {
+                    ForEach(0..<appsChunks.count, id: \.self) { chunkIndex in
+                        VStack(spacing: 0) {
+                            ForEach(0..<appsChunks[chunkIndex].count, id: \.self) { appIndex in
+                                let app = appsChunks[chunkIndex][appIndex]
+                                AppMustHaveCard(app: app) {
+                                    onAppTap(app)
+                                }
+                                
+                                // Divider line between apps (except for last item in chunk)
+                                if appIndex < appsChunks[chunkIndex].count - 1 {
+                                    Divider()
+                                        .padding(.leading, 100) // Align with text content
+                                }
+                            }
+                            
+                            // Add spacer to fill remaining space if less than 3 apps
+                            if appsChunks[chunkIndex].count < 3 {
+                                Spacer()
+                            }
+                        }
+                        .padding(.top, 10)
+                    }
+                }
+                .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
+                .frame(height: 270) // Fixed height for 3 apps
+                .overlay(
+                    // Peek preview overlay - show next page preview on the right edge
+                    HStack {
+                        Spacer()
+                        if appsChunks.count > 1 {
+                            Rectangle()
+                                .fill(LinearGradient(
+                                    gradient: Gradient(colors: [
+                                        Color.clear,
+                                        Color(UIColor.systemBackground).opacity(0.3)
+                                    ]),
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                            ))
+                            .frame(width: 40)
+                        }
+                    },
+                    alignment: .trailing
+                )
+            }
+            
+        case "editorsChoice", "personalized", "trending", "newReleases":
+            // Default carousel layout for these section types
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 16) {
+                    ForEach(apps, id: \.id) { app in
+                        AppListCard(app: app) {
+                            onAppTap(app)
+                        }
+                    }
+                }
+                .padding(.horizontal, 20)
+            }
+            
+        default:
+            // Default carousel layout (horizontal scroll)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 16) {
+                    ForEach(apps, id: \.id) { app in
+                        AppListCard(app: app) {
+                            onAppTap(app)
+                        }
+                    }
+                }
+                .padding(.horizontal, 20)
+            }
+            
+            // No apps configured
+            if apps.isEmpty {
+                Text("No apps configured for this section")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal, 20)
             }
         }
     }
@@ -1936,7 +2116,7 @@ private struct AppListCard: View {
 
 // MARK: - Array Extension for Chunking
 extension Array {
-    func chunked(into size: Int) -> [[Element]] {
+    func chunkedInto(_ size: Int) -> [[Element]] {
         return stride(from: 0, to: count, by: size).map {
             Array(self[$0..<Swift.min($0 + size, count)])
         }
