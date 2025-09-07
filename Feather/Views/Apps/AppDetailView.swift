@@ -7,6 +7,7 @@
 
 import SwiftUI
 import NukeUI
+import Feather
 
 
 struct AppDetailView: View {

@@ -3,7 +3,26 @@
 //  Feather
 //
 //  Created by Assistant on 12.08.2025.
-//  Last Updated: 06.09.2025.
+//  Last Updated: 06.09.2025
+//
+//  MARK: - HomeView - Main App Store Interface
+//  
+//  This is the main home screen of the app that displays:
+//  - Dynamic sections configured from admin panel
+//  - Featured apps, categories, and various app collections
+//  - Multiple layout types (grid, banner, hero, mustHave, etc.)
+//  - Smart caching and performance optimizations
+//  - Accessibility support and error handling
+//  
+//  Key Features:
+//  - ✅ Responsive design with multiple card layouts
+//  - ✅ Smart caching with background refresh
+//  - ✅ Parallel app loading for better performance
+//  - ✅ Comprehensive error handling with user feedback
+//  - ✅ Accessibility labels and VoiceOver support
+//  - ✅ Category navigation with proper state management
+//  - ✅ Download integration with visual feedback
+//  - ✅ Pull-to-refresh and lifecycle-aware loading
 //
 
 import SwiftUI
@@ -137,7 +156,7 @@ struct HomeView: View {
                     await loadContent(force: true, reason: "initial_app_launch")
                 }
             }
-            .refreshable {
+            .refreshable { 
                 // User explicitly pulled to refresh - get fresh data
                 await loadContent(force: true, reason: "pull_to_refresh")
             }
@@ -272,6 +291,7 @@ struct HomeView: View {
         .refreshable {
             await loadContent(force: true, reason: "pull_to_refresh")
         }
+
     }
     
     private var emptyStateView: some View {
@@ -686,6 +706,7 @@ struct HomeView: View {
                 }
         }
     }
+
 }
 
 // MARK: - Simple Card Components
@@ -1118,8 +1139,8 @@ private struct AutoSwapSectionContent: View {
     
     @State private var currentPage = 0
     @State private var timer: Timer?
-    @State private var isUserInteracting = false
-    @State private var interactionTimer: Timer?
+    @State private var isUserInteracting = false // Track user interaction
+    @State private var interactionTimer: Timer? // Timer to reset interaction state
     
     // Calculate how many apps to show per page based on section type
     private var appsPerPage: Int {
@@ -1150,129 +1171,47 @@ private struct AutoSwapSectionContent: View {
     
     var body: some View {
         VStack(spacing: 8) {
-            // Use the same approach as StaticSectionContent but with manual page control
-            switch section.type {
-            case "mustHave":
-                // Must-Have Apps layout (App Store style) - Paginated groups of 3
-                let appsChunks = Array(apps).chunkedInto(3) // Split apps into groups of 3
-                
-                if !appsChunks.isEmpty {
-                    TabView(selection: $currentPage) {
-                        ForEach(0..<appsChunks.count, id: \.self) { chunkIndex in
-                            VStack(spacing: 0) {
-                                ForEach(0..<appsChunks[chunkIndex].count, id: \.self) { appIndex in
-                                    let app = appsChunks[chunkIndex][appIndex]
-                                    AppMustHaveCard(app: app) {
-                                        // Only trigger tap if not dragging
-                                        if !isUserInteracting {
-                                            onAppTap(app)
-                                        }
-                                    }
-                                    
-                                    // Divider line between apps (except for last item in chunk)
-                                    if appIndex < appsChunks[chunkIndex].count - 1 {
-                                        Divider()
-                                            .padding(.leading, 100) // Align with text content
-                                    }
-                                }
-                                
-                                // Add spacer to fill remaining space if less than 3 apps
-                                if appsChunks[chunkIndex].count < 3 {
-                                    Spacer()
-                                }
-                            }
-                            .padding(.top, 10)
-                            .tag(chunkIndex)
-                        }
-                    }
-                    .tabViewStyle(PageTabViewStyle(indexDisplayMode: .automatic))
-                    .frame(height: 270) // Fixed height for 3 apps
-                    .onTapGesture {
-                        // Reset auto-scroll timer on any tap
-                        resetAutoScrollTimer()
-                    }
-                    .gesture(
-                        DragGesture(minimumDistance: 20)
-                            .onChanged { _ in
-                                pauseAutoScroll()
-                            }
-                            .onEnded { _ in
-                                resumeAutoScroll()
-                            }
-                    )
-                }
-                
-            default:
-                // For other types, use horizontal scrolling approach
-                GeometryReader { geometry in
-                    HStack(spacing: 0) {
-                        ForEach(0..<appPages.count, id: \.self) { index in
-                            StaticSectionContent(
-                                section: section,
-                                apps: appPages[index],
-                                onAppTap: onAppTap
-                            )
-                            .frame(width: geometry.size.width)
-                        }
-                    }
-                    .frame(width: geometry.size.width * CGFloat(appPages.count), alignment: .leading)
-                    .offset(x: -CGFloat(currentPage) * geometry.size.width)
-                    .animation(.easeOut(duration: 0.3), value: currentPage)
-                    .onTapGesture {
-                        // Reset auto-scroll timer on any tap
-                        resetAutoScrollTimer()
-                    }
-                    .gesture(
-                        DragGesture(minimumDistance: 20)
-                            .onChanged { value in
-                                pauseAutoScroll()
-                            }
-                            .onEnded { value in
-                                let threshold = value.translation.width
-                                var newPage = currentPage
-                                
-                                if abs(threshold) > geometry.size.width * 0.2 {
-                                    if threshold < 0 {
-                                        // Swipe left - next page
-                                        if currentPage < appPages.count - 1 {
-                                            newPage = currentPage + 1
-                                        }
-                                    } else {
-                                        // Swipe right - previous page
-                                        if currentPage > 0 {
-                                            newPage = currentPage - 1
-                                        }
-                                    }
-                                }
-                                
-                                withAnimation(.easeOut(duration: 0.3)) {
-                                    currentPage = newPage
-                                }
-                                
-                                resumeAutoScroll()
-                            }
-                    )
-                }
-                .frame(height: section.type == "hero" ? 300 : 200)
-                .clipped()
+            // Main content with current apps
+            StaticSectionContent(
+                section: section,
+                apps: currentApps,
+                onAppTap: onAppTap
+            )
+            .onTapGesture {
+                // Reset auto-scroll timer when user taps on the section
+                resetAutoScrollTimer()
             }
+            .onLongPressGesture(minimumDuration: 0.1) {
+                // Pause auto-scroll when user long presses
+                pauseAutoScroll()
+            } onPressingChanged: { isPressing in
+                if isPressing {
+                    pauseAutoScroll()
+                } else {
+                    resumeAutoScroll()
+                }
+            }
+            // Add drag gesture to detect swiping
+            .gesture(
+                DragGesture()
+                    .onChanged { _ in
+                        // Pause auto-scroll when user starts dragging
+                        pauseAutoScroll()
+                    }
+                    .onEnded { _ in
+                        // Reset timer when user finishes dragging
+                        resetAutoScrollTimer()
+                    }
+            )
             
-            // Page indicator for auto-swap sections with multiple pages (only for non-mustHave types)
-            if section.type != "mustHave" && appPages.count > 1 {
+            // Page indicator for auto-swap sections with multiple pages
+            if appPages.count > 1 {
                 HStack(spacing: 6) {
                     ForEach(0..<appPages.count, id: \.self) { index in
-                        Button(action: {
-                            withAnimation(.easeOut(duration: 0.3)) {
-                                currentPage = index
-                                // Reset auto-scroll timer when user interacts with page indicator
-                                resetAutoScrollTimer()
-                            }
-                        }) {
-                            Circle()
-                                .fill(index == currentPage ? Color.primary : Color.secondary.opacity(0.3))
-                                .frame(width: index == currentPage ? 8 : 6, height: index == currentPage ? 8 : 6)
-                        }
-                        .buttonStyle(PlainButtonStyle())
+                        Circle()
+                            .fill(index == currentPage ? Color.primary : Color.secondary.opacity(0.3))
+                            .frame(width: 6, height: 6)
+                            .animation(.easeInOut(duration: 0.3), value: currentPage)
                     }
                 }
                 .padding(.horizontal, 20)
@@ -1281,9 +1220,27 @@ private struct AutoSwapSectionContent: View {
         }
         .onAppear {
             startAutoSwap()
+            // Add observers for user interaction notifications
+            NotificationCenter.default.addObserver(
+                forName: .userInteractionStarted,
+                object: nil,
+                queue: .main
+            ) { _ in
+                pauseAutoScroll()
+            }
+            
+            NotificationCenter.default.addObserver(
+                forName: .userInteractionEnded,
+                object: nil,
+                queue: .main
+            ) { _ in
+                resumeAutoScroll()
+            }
         }
         .onDisappear {
             stopAutoSwap()
+            // Remove observers
+            NotificationCenter.default.removeObserver(self)
         }
         .onChange(of: section.id) { _ in
             // Restart timer if section changes
@@ -1303,10 +1260,8 @@ private struct AutoSwapSectionContent: View {
         timer = Timer.scheduledTimer(withTimeInterval: timeInterval, repeats: true) { _ in
             // Only auto-scroll if user is not interacting
             if !isUserInteracting {
-                DispatchQueue.main.async {
-                    withAnimation(.easeInOut(duration: 0.5)) {
-                        currentPage = (currentPage + 1) % max(1, appPages.count)
-                    }
+                withAnimation(.easeInOut(duration: 0.5)) {
+                    currentPage = (currentPage + 1) % appPages.count
                 }
             }
         }
@@ -1328,19 +1283,24 @@ private struct AutoSwapSectionContent: View {
     private func resumeAutoScroll() {
         // Reset the interaction timer
         interactionTimer?.invalidate()
-        interactionTimer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: false) { _ in
-            DispatchQueue.main.async {
-                self.isUserInteracting = false
-            }
+        interactionTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: false) { _ in
+            isUserInteracting = false
         }
     }
     
-    // Reset auto-scroll timer
+    // Reset auto-scroll timer when user interacts
     private func resetAutoScrollTimer() {
-        stopAutoSwap()
-        startAutoSwap()
+        // Pause auto-scroll immediately
+        pauseAutoScroll()
+        
+        // Restart the timer after a delay
+        interactionTimer?.invalidate()
+        interactionTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { _ in
+            isUserInteracting = false
+        }
     }
 }
+
 // Add extension for notification names
 extension Notification.Name {
     static let userInteractionStarted = Notification.Name("UserInteractionStarted")
@@ -1365,6 +1325,13 @@ private struct StaticSectionContent: View {
                 }
             }
             .padding(.horizontal, 20)
+            .onTapGesture {
+                // Notify about user interaction
+                NotificationCenter.default.post(name: .userInteractionStarted, object: nil)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    NotificationCenter.default.post(name: .userInteractionEnded, object: nil)
+                }
+            }
             
         case "banner":
             // Banner layout (large cards)
@@ -1378,6 +1345,26 @@ private struct StaticSectionContent: View {
                 }
                 .padding(.horizontal, 20)
             }
+            .onTapGesture {
+                // Notify about user interaction
+                NotificationCenter.default.post(name: .userInteractionStarted, object: nil)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    NotificationCenter.default.post(name: .userInteractionEnded, object: nil)
+                }
+            }
+            .gesture(
+                DragGesture()
+                    .onChanged { _ in
+                        // Notify about user interaction
+                        NotificationCenter.default.post(name: .userInteractionStarted, object: nil)
+                    }
+                    .onEnded { _ in
+                        // Notify about user interaction ended
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            NotificationCenter.default.post(name: .userInteractionEnded, object: nil)
+                        }
+                    }
+            )
             
         case "hero":
             // Hero layout - TabView with smooth paging like must-have cards
@@ -1433,6 +1420,26 @@ private struct StaticSectionContent: View {
                     },
                     alignment: .trailing
                 )
+                .onTapGesture {
+                    // Notify about user interaction
+                    NotificationCenter.default.post(name: .userInteractionStarted, object: nil)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        NotificationCenter.default.post(name: .userInteractionEnded, object: nil)
+                    }
+                }
+                .gesture(
+                    DragGesture()
+                        .onChanged { _ in
+                            // Notify about user interaction
+                            NotificationCenter.default.post(name: .userInteractionStarted, object: nil)
+                        }
+                        .onEnded { _ in
+                            // Notify about user interaction ended
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                NotificationCenter.default.post(name: .userInteractionEnded, object: nil)
+                            }
+                        }
+                )
             }
             
         case "mustHave":
@@ -1485,6 +1492,26 @@ private struct StaticSectionContent: View {
                     },
                     alignment: .trailing
                 )
+                .onTapGesture {
+                    // Notify about user interaction
+                    NotificationCenter.default.post(name: .userInteractionStarted, object: nil)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        NotificationCenter.default.post(name: .userInteractionEnded, object: nil)
+                    }
+                }
+                .gesture(
+                    DragGesture()
+                        .onChanged { _ in
+                            // Notify about user interaction
+                            NotificationCenter.default.post(name: .userInteractionStarted, object: nil)
+                        }
+                        .onEnded { _ in
+                            // Notify about user interaction ended
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                NotificationCenter.default.post(name: .userInteractionEnded, object: nil)
+                            }
+                        }
+                )
             }
             
         case "editorsChoice", "personalized", "trending", "newReleases":
@@ -1499,6 +1526,26 @@ private struct StaticSectionContent: View {
                 }
                 .padding(.horizontal, 20)
             }
+            .onTapGesture {
+                // Notify about user interaction
+                NotificationCenter.default.post(name: .userInteractionStarted, object: nil)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    NotificationCenter.default.post(name: .userInteractionEnded, object: nil)
+                }
+            }
+            .gesture(
+                DragGesture()
+                    .onChanged { _ in
+                        // Notify about user interaction
+                        NotificationCenter.default.post(name: .userInteractionStarted, object: nil)
+                    }
+                    .onEnded { _ in
+                        // Notify about user interaction ended
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            NotificationCenter.default.post(name: .userInteractionEnded, object: nil)
+                        }
+                    }
+            )
             
         default:
             // Default carousel layout (horizontal scroll)
@@ -1512,6 +1559,27 @@ private struct StaticSectionContent: View {
                 }
                 .padding(.horizontal, 20)
             }
+            .onTapGesture {
+                // Notify about user interaction
+                NotificationCenter.default.post(name: .userInteractionStarted, object: nil)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    NotificationCenter.default.post(name: .userInteractionEnded, object: nil)
+                }
+            }
+            .gesture(
+                DragGesture()
+                    .onChanged { _ in
+                        // Notify about user interaction
+                        NotificationCenter.default.post(name: .userInteractionStarted, object: nil)
+                    }
+                    .onEnded { _ in
+                        // Notify about user interaction ended
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            NotificationCenter.default.post(name: .userInteractionEnded, object: nil)
+                        }
+                    }
+            )
+            
         }
         
         // No apps configured
@@ -1520,6 +1588,1054 @@ private struct StaticSectionContent: View {
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .padding(.horizontal, 20)
+        }
+    }
+}
+
+private struct AppGridCard: View {
+    let app: IOSAppDTO
+    let onTap: () -> Void
+    
+    var body: some View {
+        Button(action: onTap) {
+            VStack(spacing: 6) {
+                // App Icon
+                LazyImage(url: URL(string: app.iconUrl)) { state in
+                    if let image = state.image {
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 60, height: 60)
+                            .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+                    } else {
+                        RoundedRectangle(cornerRadius: 13, style: .continuous)
+                            .fill(Color.gray.opacity(0.1))
+                            .frame(width: 60, height: 60)
+                            .overlay(
+                                ProgressView()
+                                    .scaleEffect(0.7)
+                            )
+                    }
+                }
+                
+                // App Name
+                Text(app.displayName)
+                    .font(.caption2)
+                    .foregroundColor(.primary)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                    
+                // Rating stars for grid cards - reserved space for consistency
+                HStack(spacing: 1) {
+                    if let rating = app.rating, rating > 0 {
+                        ForEach(0..<5) { index in
+                            Image(systemName: index < Int(rating.rounded()) ? "star.fill" : "star")
+                                .font(.caption2)
+                                .foregroundColor(.yellow)
+                        }
+                    } else {
+                        // Invisible spacer to maintain consistent height
+                        ForEach(0..<5) { _ in
+                            Image(systemName: "star")
+                                .font(.caption2)
+                                .foregroundColor(.clear)
+                        }
+                    }
+                }
+            }
+        }
+        .buttonStyle(PlainButtonStyle())
+        .onLongPressGesture(minimumDuration: 0.1) {
+            // Handle long press
+        } onPressingChanged: { isPressing in
+            // Notify parent about interaction
+            if isPressing {
+                NotificationCenter.default.post(name: .userInteractionStarted, object: nil)
+            } else {
+                NotificationCenter.default.post(name: .userInteractionEnded, object: nil)
+            }
+        }
+    }
+}
+
+private struct AppBannerCard: View {
+    let app: IOSAppDTO
+    let onTap: () -> Void
+    @ObservedObject private var downloadManager = DownloadManager.shared
+    
+    // Check if this app is currently being downloaded
+    private var currentDownload: Download? {
+        let downloadId = "BabaApp_\(app.bundleIdentifier)_\(app.id)"
+        return downloadManager.downloads.first { $0.id == downloadId }
+    }
+    
+    private var downloadButtonImage: String {
+        guard let download = currentDownload else {
+            return "arrow.down.circle.fill"
+        }
+        
+        switch download.state {
+        case .waiting:
+            return "clock"
+        case .downloading:
+            return "pause.circle.fill"
+        case .paused:
+            return "play.circle.fill"
+        case .completed:
+            return "checkmark.circle.fill"
+        case .failed:
+            return "exclamationmark.triangle.fill"
+        }
+    }
+    
+    private var downloadButtonColor: Color {
+        guard let download = currentDownload else {
+            return .blue
+        }
+        
+        switch download.state {
+        case .waiting:
+            return .orange
+        case .downloading:
+            return .blue
+        case .paused:
+            return .blue
+        case .completed:
+            return .green
+        case .failed:
+            return .red
+        }
+    }
+    
+    var body: some View {
+        Button(action: onTap) {
+            VStack(spacing: 12) {
+                // Large App Icon with better loading states
+                LazyImage(url: URL(string: app.iconUrl)) { state in
+                    if let image = state.image {
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 140, height: 140)
+                            .clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
+                    } else if state.error != nil {
+                        // Error state with retry visual cue
+                        RoundedRectangle(cornerRadius: 30, style: .continuous)
+                            .fill(Color.red.opacity(0.1))
+                            .frame(width: 140, height: 140)
+                            .overlay(
+                                VStack {
+                                    Image(systemName: "exclamationmark.triangle")
+                                        .foregroundColor(.red)
+                                    Text("Tap to retry")
+                                        .font(.caption2)
+                                        .foregroundColor(.secondary)
+                                }
+                            )
+                    } else {
+                        // Loading state
+                        RoundedRectangle(cornerRadius: 30, style: .continuous)
+                            .fill(Color.gray.opacity(0.1))
+                            .frame(width: 140, height: 140)
+                            .overlay(
+                                ProgressView()
+                            )
+                    }
+                }
+                
+                // App Info with Download Button
+                VStack(spacing: 4) {
+                    HStack {
+                        Text(app.displayName)
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                            .lineLimit(1)
+                        
+                        Spacer()
+                        
+                        // Download Button
+                        Button(action: {
+                            handleDownloadButtonTap()
+                        }) {
+                            Image(systemName: downloadButtonImage)
+                                .font(.title3)
+                                .foregroundColor(downloadButtonColor)
+                                .frame(width: 44, height: 44) // Larger touch target
+                                .contentShape(Rectangle()) // Improve touch detection
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .background(Color.clear) // Ensure touch area is active
+                        .onTapGesture {
+                            // Independent download action - prevent event bubbling
+                            handleDownloadButtonTap()
+                        }
+                    }
+                    
+                    if let developer = app.developer {
+                        Text(developer)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    
+                    if let description = app.displayShortDescription {
+                        Text(description)
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.leading)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    
+                    // Rating stars for banner cards - reserved space for consistency
+                    HStack(spacing: 1) {
+                        if let rating = app.rating, rating > 0 {
+                            ForEach(0..<5) { index in
+                                Image(systemName: index < Int(rating.rounded()) ? "star.fill" : "star")
+                                    .font(.caption)
+                                    .foregroundColor(.yellow)
+                            }
+                        } else {
+                            // Invisible spacer to maintain consistent height
+                            ForEach(0..<5) { _ in
+                                Image(systemName: "star")
+                                    .font(.caption)
+                                    .foregroundColor(.clear)
+                            }
+                        }
+                        Spacer()
+                    }
+                }
+                .frame(width: 140)
+            }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(Color(UIColor.secondarySystemGroupedBackground))
+                    .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+        .onLongPressGesture(minimumDuration: 0.1) {
+            // Handle long press
+        } onPressingChanged: { isPressing in
+            // Notify parent about interaction
+            if isPressing {
+                NotificationCenter.default.post(name: .userInteractionStarted, object: nil)
+            } else {
+                NotificationCenter.default.post(name: .userInteractionEnded, object: nil)
+            }
+        }
+    }
+    
+    private func handleDownloadButtonTap() {
+        // Provide immediate haptic feedback
+        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+        impactFeedback.impactOccurred()
+        
+        if let download = currentDownload {
+            // Handle existing download states
+            switch download.state {
+            case .waiting:
+                downloadManager.resumeDownload(download)
+            case .downloading:
+                downloadManager.pauseDownload(download)
+            case .paused:
+                downloadManager.resumeDownload(download)
+            case .completed:
+                return
+            case .failed:
+                downloadManager.resumeDownload(download)
+            }
+        } else {
+            // Start new download
+            if let ipaUrl = app.ipaUrl, let url = URL(string: ipaUrl) {
+                let downloadId = "BabaApp_\(app.bundleIdentifier)_\(app.id)"
+                let downloadResult = downloadManager.startDownload(from: url, id: downloadId)
+                if downloadResult != nil {
+                    // Success haptic feedback for new download
+                    let successFeedback = UINotificationFeedbackGenerator()
+                    successFeedback.notificationOccurred(.success)
+                    print("Download started successfully for: \(app.displayName)")
+                } else {
+                    // Error haptic feedback for blocked download
+                    let errorFeedback = UINotificationFeedbackGenerator()
+                    errorFeedback.notificationOccurred(.error)
+                    print("Download blocked: App already completed")
+                }
+            } else {
+                // Error haptic feedback for missing URL
+                let errorFeedback = UINotificationFeedbackGenerator()
+                errorFeedback.notificationOccurred(.error)
+                print("No IPA URL available for app: \(app.displayName)")
+            }
+        }
+    }
+}
+
+private struct AppHeroCard: View {
+    let app: IOSAppDTO
+    let onTap: () -> Void
+    @ObservedObject private var downloadManager = DownloadManager.shared
+    
+    // Check if this app is currently being downloaded
+    private var currentDownload: Download? {
+        let downloadId = "BabaApp_\(app.bundleIdentifier)_\(app.id)"
+        return downloadManager.downloads.first { $0.id == downloadId }
+    }
+    
+    private var downloadButtonImage: String {
+        guard let download = currentDownload else {
+            return "arrow.down.circle.fill"
+        }
+        
+        switch download.state {
+        case .waiting:
+            return "clock"
+        case .downloading:
+            return "pause.circle.fill"
+        case .paused:
+            return "play.circle.fill"
+        case .completed:
+            return "checkmark.circle.fill"
+        case .failed:
+            return "exclamationmark.triangle.fill"
+        }
+    }
+    
+    private var downloadButtonColor: Color {
+        guard let download = currentDownload else {
+            return .blue
+        }
+        
+        switch download.state {
+        case .waiting:
+            return .orange
+        case .downloading:
+            return .blue
+        case .paused:
+            return .blue
+        case .completed:
+            return .green
+        case .failed:
+            return .red
+        }
+    }
+    
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 16) {
+                // App Icon
+                LazyImage(url: URL(string: app.iconUrl)) { state in
+                    if let image = state.image {
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 100, height: 100)
+                            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+                    } else {
+                        RoundedRectangle(cornerRadius: 22, style: .continuous)
+                            .fill(Color.gray.opacity(0.1))
+                            .frame(width: 100, height: 100)
+                            .overlay(
+                                ProgressView()
+                            )
+                    }
+                }
+                
+                // App Info
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text(app.displayName)
+                            .font(.title2.bold())
+                            .foregroundColor(.primary)
+                            .lineLimit(2)
+                        
+                        Spacer()
+                        
+                        // Download Button
+                        Button(action: {
+                            handleDownloadButtonTap()
+                        }) {
+                            Image(systemName: downloadButtonImage)
+                                .font(.title2)
+                                .foregroundColor(downloadButtonColor)
+                                .frame(width: 44, height: 44) // Larger touch target
+                                .contentShape(Rectangle()) // Improve touch detection
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .background(Color.clear) // Ensure touch area is active
+                    }
+                    
+                    if let developer = app.developer {
+                        Text(developer)
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    }
+                    
+                    if let description = app.displayShortDescription {
+                        Text(description)
+                            .font(.body)
+                            .foregroundColor(.secondary)
+                            .lineLimit(3)
+                    }
+                    
+                    // Rating stars for hero cards - reserved space for consistency
+                    HStack(spacing: 2) {
+                        if let rating = app.rating, rating > 0 {
+                            ForEach(0..<5) { index in
+                                Image(systemName: index < Int(rating.rounded()) ? "star.fill" : "star")
+                                    .font(.caption)
+                                    .foregroundColor(.yellow)
+                            }
+                            Text(String(format: "%.1f", rating))
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        } else {
+                            // Invisible spacer to maintain consistent height
+                            ForEach(0..<5) { _ in
+                                Image(systemName: "star")
+                                    .font(.caption)
+                                    .foregroundColor(.clear)
+                            }
+                            Text("0.0")
+                                .font(.caption)
+                                .foregroundColor(.clear)
+                        }
+                        Spacer()
+                    }
+                    
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                
+                Spacer()
+            }
+            .frame(width: 320, height: 140) // Fixed width for horizontal scrolling
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color(UIColor.secondarySystemGroupedBackground))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .stroke(Color.primary.opacity(0.4), lineWidth: 4)
+                    )
+                    .shadow(color: Color.black.opacity(0.4), radius: 20, x: 0, y: 10)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+        .buttonStyle(PlainButtonStyle())
+        .onLongPressGesture(minimumDuration: 0.1) {
+            // Handle long press
+        } onPressingChanged: { isPressing in
+            // Notify parent about interaction
+            if isPressing {
+                NotificationCenter.default.post(name: .userInteractionStarted, object: nil)
+            } else {
+                NotificationCenter.default.post(name: .userInteractionEnded, object: nil)
+            }
+        }
+    }
+    
+    private func handleDownloadButtonTap() {
+        // Provide immediate haptic feedback
+        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+        impactFeedback.impactOccurred()
+        
+        if let download = currentDownload {
+            // Handle existing download states
+            switch download.state {
+            case .waiting:
+                downloadManager.resumeDownload(download)
+            case .downloading:
+                downloadManager.pauseDownload(download)
+            case .paused:
+                downloadManager.resumeDownload(download)
+            case .completed:
+                return
+            case .failed:
+                downloadManager.resumeDownload(download)
+            }
+        } else {
+            // Start new download
+            if let ipaUrl = app.ipaUrl, let url = URL(string: ipaUrl) {
+                let downloadId = "BabaApp_\(app.bundleIdentifier)_\(app.id)"
+                let downloadResult = downloadManager.startDownload(from: url, id: downloadId)
+                if downloadResult != nil {
+                    // Success haptic feedback for new download
+                    let successFeedback = UINotificationFeedbackGenerator()
+                    successFeedback.notificationOccurred(.success)
+                    print("Download started successfully for: \(app.displayName)")
+                } else {
+                    // Error haptic feedback for blocked download
+                    let errorFeedback = UINotificationFeedbackGenerator()
+                    errorFeedback.notificationOccurred(.error)
+                    print("Download blocked: App already completed")
+                }
+            } else {
+                // Error haptic feedback for missing URL
+                let errorFeedback = UINotificationFeedbackGenerator()
+                errorFeedback.notificationOccurred(.error)
+                print("No IPA URL available for app: \(app.displayName)")
+            }
+        }
+    }
+}
+
+private struct AppMustHaveCard: View {
+    let app: IOSAppDTO
+    let onTap: () -> Void
+    @ObservedObject private var downloadManager = DownloadManager.shared
+    
+    // Check if this app is currently being downloaded
+    private var currentDownload: Download? {
+        let downloadId = "BabaApp_\(app.bundleIdentifier)_\(app.id)"
+        return downloadManager.downloads.first { $0.id == downloadId }
+    }
+    
+    private var downloadButtonImage: String {
+        guard let download = currentDownload else {
+            return "arrow.down.circle.fill"
+        }
+        
+        switch download.state {
+        case .waiting:
+            return "clock"
+        case .downloading:
+            return "pause.circle"
+        case .paused:
+            return "play.circle"
+        case .completed:
+            return "checkmark.circle"
+        case .failed:
+            return "exclamationmark.triangle"
+        }
+    }
+    
+    private var downloadButtonColor: Color {
+        guard let download = currentDownload else {
+            return .blue
+        }
+        
+        switch download.state {
+        case .waiting:
+            return .orange
+        case .downloading:
+            return .blue
+        case .paused:
+            return .blue
+        case .completed:
+            return .green
+        case .failed:
+            return .red
+        }
+    }
+    
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 16) {
+                // App Icon
+                LazyImage(url: URL(string: app.iconUrl)) { state in
+                    if let image = state.image {
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 64, height: 64)
+                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    } else {
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(Color.gray.opacity(0.1))
+                            .frame(width: 64, height: 64)
+                            .overlay(
+                                ProgressView()
+                                    .scaleEffect(0.7)
+                            )
+                    }
+                }
+                
+                // App Info
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(app.displayName)
+                        .font(.system(size: 17, weight: .medium))
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                    
+                    if let description = app.displayShortDescription {
+                        Text(description)
+                            .font(.system(size: 13, weight: .regular))
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    }
+                    
+                    if let developer = app.developer {
+                        Text(developer)
+                            .font(.system(size: 11, weight: .regular))
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    }
+                }
+                
+                Spacer()
+                
+                // Download Button with State
+                VStack {
+                    Button(action: {
+                        handleDownloadButtonTap()
+                    }) {
+                        ZStack {
+                            if let download = currentDownload, download.state == .downloading {
+                                // Show progress circle for downloading state
+                                Circle()
+                                    .stroke(Color.gray.opacity(0.3), lineWidth: 2)
+                                    .frame(width: 24, height: 24)
+                                
+                                Circle()
+                                    .trim(from: 0, to: download.progress)
+                                    .stroke(downloadButtonColor, style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                                    .frame(width: 24, height: 24)
+                                    .rotationEffect(.degrees(-90))
+                                    .animation(.easeInOut(duration: 0.2), value: download.progress)
+                                
+                                Image(systemName: downloadButtonImage)
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundColor(downloadButtonColor)
+                            } else {
+                                Image(systemName: downloadButtonImage)
+                                    .font(.system(size: 20, weight: .medium))
+                                    .foregroundColor(downloadButtonColor)
+                            }
+                        }
+                        .frame(width: 44, height: 44) // Larger touch target
+                        .contentShape(Rectangle()) // Improve touch detection
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .background(Color.clear) // Ensure touch area is active
+                    
+                    Spacer()
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
+            .frame(height: 80) // Fixed height for consistent layout
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.clear)
+        }
+        .buttonStyle(PlainButtonStyle())
+        .onLongPressGesture(minimumDuration: 0.1) {
+            // Handle long press
+        } onPressingChanged: { isPressing in
+            // Notify parent about interaction
+            if isPressing {
+                NotificationCenter.default.post(name: .userInteractionStarted, object: nil)
+            } else {
+                NotificationCenter.default.post(name: .userInteractionEnded, object: nil)
+            }
+        }
+    }
+    
+    private func handleDownloadButtonTap() {
+        // Provide immediate haptic feedback
+        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+        impactFeedback.impactOccurred()
+        
+        if let download = currentDownload {
+            // Handle existing download states
+            switch download.state {
+            case .waiting:
+                // Start the download (move to front of queue if needed)
+                downloadManager.resumeDownload(download)
+            case .downloading:
+                // Pause the download
+                downloadManager.pauseDownload(download)
+            case .paused:
+                // Resume the download
+                downloadManager.resumeDownload(download)
+            case .completed:
+                // Do nothing for completed downloads
+                return
+            case .failed:
+                // Retry the download
+                downloadManager.resumeDownload(download)
+            }
+        } else {
+            // Start new download
+            if let ipaUrl = app.ipaUrl, let url = URL(string: ipaUrl) {
+                let downloadId = "BabaApp_\(app.bundleIdentifier)_\(app.id)"
+                let downloadResult = downloadManager.startDownload(from: url, id: downloadId)
+                if downloadResult != nil {
+                    // Success haptic feedback for new download
+                    let successFeedback = UINotificationFeedbackGenerator()
+                    successFeedback.notificationOccurred(.success)
+                    print("Download started successfully for: \(app.displayName)")
+                } else {
+                    // Error haptic feedback for blocked download
+                    let errorFeedback = UINotificationFeedbackGenerator()
+                    errorFeedback.notificationOccurred(.error)
+                    print("Download blocked: App already completed")
+                }
+            } else {
+                // Error haptic feedback for missing URL
+                let errorFeedback = UINotificationFeedbackGenerator()
+                errorFeedback.notificationOccurred(.error)
+                print("No IPA URL available for app: \(app.displayName)")
+            }
+        }
+    }
+}
+
+private struct AppListCard: View {
+    let app: IOSAppDTO
+    let onTap: () -> Void
+    
+    var body: some View {
+        VStack(spacing: 8) {
+            // App Icon
+            Button(action: onTap) {
+                LazyImage(url: URL(string: app.iconUrl)) { state in
+                    if let image = state.image {
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 80, height: 80)
+                            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    } else {
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .fill(Color.gray.opacity(0.1))
+                            .frame(width: 80, height: 80)
+                            .overlay(
+                                ProgressView()
+                                    .scaleEffect(0.8)
+                            )
+                    }
+                }
+            }
+            .buttonStyle(PlainButtonStyle())
+            
+            // App Info
+            VStack(spacing: 4) {
+                Text(app.displayName)
+                    .font(.subheadline.weight(.medium))
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+                    
+                // Rating stars for list cards - reserved space for consistency
+                HStack(spacing: 1) {
+                    if let rating = app.rating, rating > 0 {
+                        ForEach(0..<5) { index in
+                            Image(systemName: index < Int(rating.rounded()) ? "star.fill" : "star")
+                                .font(.caption2)
+                                .foregroundColor(.yellow)
+                        }
+                    } else {
+                        // Invisible spacer to maintain consistent height
+                        ForEach(0..<5) { _ in
+                            Image(systemName: "star")
+                                .font(.caption2)
+                                .foregroundColor(.clear)
+                        }
+                    }
+                }
+            }
+            .frame(width: 100)
+        }
+        .onLongPressGesture(minimumDuration: 0.1) {
+            // Handle long press
+        } onPressingChanged: { isPressing in
+            // Notify parent about interaction
+            if isPressing {
+                NotificationCenter.default.post(name: .userInteractionStarted, object: nil)
+            } else {
+                NotificationCenter.default.post(name: .userInteractionEnded, object: nil)
+            }
+        }
+    }
+}
+
+// MARK: - Array Extension for Chunking
+extension Array {
+    func chunkedInto(_ size: Int) -> [[Element]] {
+        return stride(from: 0, to: count, by: size).map {
+            Array(self[$0..<Swift.min($0 + size, count)])
+        }
+    }
+}
+
+// MARK: - Section Apps View
+private struct SectionAppsView: View {
+    let title: String
+    let apps: [IOSAppDTO]
+    let onAppTap: (IOSAppDTO) -> Void
+    
+    @Environment(\.dismiss) private var dismiss
+    @State private var selectedApp: IOSAppDTO?
+    
+    var body: some View {
+        NavigationView {
+            ScrollView {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: 2), spacing: 16) {
+                    ForEach(apps, id: \.id) { app in
+                        SectionAppCard(app: app) {
+                            selectedApp = app
+                        }
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
+            }
+            .navigationTitle(title)
+            .navigationBarTitleDisplayMode(.large)
+        }
+        .sheet(item: $selectedApp) { app in
+            AppDetailView(app: app)
+        }
+    }
+}
+
+private struct SectionAppCard: View {
+    let app: IOSAppDTO
+    let onTap: () -> Void
+    
+    var body: some View {
+        Button(action: onTap) {
+            VStack(spacing: 12) {
+                // App Icon
+                LazyImage(url: URL(string: app.iconUrl)) { state in
+                    if let image = state.image {
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 80, height: 80)
+                            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    } else {
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .fill(Color.gray.opacity(0.1))
+                            .frame(width: 80, height: 80)
+                            .overlay(
+                                ProgressView()
+                                    .scaleEffect(0.8)
+                            )
+                    }
+                }
+                
+                // App Info
+                VStack(spacing: 4) {
+                    Text(app.displayName)
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.center)
+                    
+                    if let developer = app.developer {
+                        Text(developer)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    }
+                    
+                    // Rating if available
+                    if let rating = app.rating, rating > 0 {
+                        HStack(spacing: 2) {
+                            ForEach(0..<5) { index in
+                                Image(systemName: index < Int(rating) ? "star.fill" : "star")
+                                    .font(.caption2)
+                                    .foregroundColor(.yellow)
+                            }
+                        }
+                    }
+                }
+                
+                Spacer()
+            }
+            .frame(height: 160)
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(Color(.systemBackground))
+            .cornerRadius(12)
+            .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+private struct SectionAppRow: View {
+    let app: IOSAppDTO
+    let onTap: () -> Void
+    @ObservedObject private var downloadManager = DownloadManager.shared
+    
+    // Check if this app is currently being downloaded
+    private var currentDownload: Download? {
+        let downloadId = "BabaApp_\(app.bundleIdentifier)_\(app.id)"
+        return downloadManager.downloads.first { $0.id == downloadId }
+    }
+    
+    private var downloadButtonImage: String {
+        guard let download = currentDownload else {
+            return "arrow.down.circle.fill"
+        }
+        
+        switch download.state {
+        case .waiting:
+            return "clock"
+        case .downloading:
+            return "pause.circle.fill"
+        case .paused:
+            return "play.circle.fill"
+        case .completed:
+            return "checkmark.circle.fill"
+        case .failed:
+            return "exclamationmark.triangle.fill"
+        }
+    }
+    
+    private var downloadButtonColor: Color {
+        guard let download = currentDownload else {
+            return .blue
+        }
+        
+        switch download.state {
+        case .waiting:
+            return .orange
+        case .downloading:
+            return .blue
+        case .paused:
+            return .blue
+        case .completed:
+            return .green
+        case .failed:
+            return .red
+        }
+    }
+    
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 16) {
+                // App Icon
+                LazyImage(url: URL(string: app.iconUrl)) { state in
+                    if let image = state.image {
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 64, height: 64)
+                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    } else {
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(Color.gray.opacity(0.1))
+                            .frame(width: 64, height: 64)
+                            .overlay(
+                                ProgressView()
+                                    .scaleEffect(0.7)
+                            )
+                    }
+                }
+                
+                // App Info
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(app.displayName)
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    
+                    if let developer = app.developer {
+                        Text(developer)
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    
+                    if let description = app.displayShortDescription {
+                        Text(description)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .lineLimit(2)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    
+                    // Rating stars
+                    HStack(spacing: 2) {
+                        if let rating = app.rating, rating > 0 {
+                            ForEach(0..<5) { index in
+                                Image(systemName: index < Int(rating.rounded()) ? "star.fill" : "star")
+                                    .font(.caption)
+                                    .foregroundColor(.yellow)
+                            }
+                            Text(String(format: "%.1f", rating))
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        Spacer()
+                    }
+                }
+                
+                Spacer()
+                
+                // Download Button
+                Button(action: {
+                    handleDownloadButtonTap()
+                }) {
+                    Image(systemName: downloadButtonImage)
+                        .font(.title2)
+                        .foregroundColor(downloadButtonColor)
+                        .frame(width: 44, height: 44) // Larger touch target
+                        .contentShape(Rectangle()) // Improve touch detection
+                }
+                .buttonStyle(PlainButtonStyle())
+                .background(Color.clear) // Ensure touch area is active
+            }
+            .padding(.vertical, 8)
+            .padding(.horizontal, 16)
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(Color(UIColor.secondarySystemGroupedBackground))
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+    
+    private func handleDownloadButtonTap() {
+        // Provide immediate haptic feedback
+        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+        impactFeedback.impactOccurred()
+        
+        if let download = currentDownload {
+            // Handle existing download states
+            switch download.state {
+            case .waiting:
+                downloadManager.resumeDownload(download)
+            case .downloading:
+                downloadManager.pauseDownload(download)
+            case .paused:
+                downloadManager.resumeDownload(download)
+            case .completed:
+                return
+            case .failed:
+                downloadManager.resumeDownload(download)
+            }
+        } else {
+            // Start new download
+            if let ipaUrl = app.ipaUrl, let url = URL(string: ipaUrl) {
+                let downloadId = "BabaApp_\(app.bundleIdentifier)_\(app.id)"
+                let downloadResult = downloadManager.startDownload(from: url, id: downloadId)
+                if downloadResult != nil {
+                    // Success haptic feedback for new download
+                    let successFeedback = UINotificationFeedbackGenerator()
+                    successFeedback.notificationOccurred(.success)
+                    print("Download started successfully for: \(app.displayName)")
+                } else {
+                    // Error haptic feedback for blocked download
+                    let errorFeedback = UINotificationFeedbackGenerator()
+                    errorFeedback.notificationOccurred(.error)
+                    print("Download blocked: App already completed")
+                }
+            } else {
+                // Error haptic feedback for missing URL
+                let errorFeedback = UINotificationFeedbackGenerator()
+                errorFeedback.notificationOccurred(.error)
+                print("No IPA URL available for app: \(app.displayName)")
+            }
         }
     }
 }

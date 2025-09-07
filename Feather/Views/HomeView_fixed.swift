@@ -1118,8 +1118,8 @@ private struct AutoSwapSectionContent: View {
     
     @State private var currentPage = 0
     @State private var timer: Timer?
-    @State private var isUserInteracting = false
-    @State private var interactionTimer: Timer?
+    @State private var isUserInteracting = false // Track user interaction
+    @State private var interactionTimer: Timer? // Timer to reset interaction state
     
     // Calculate how many apps to show per page based on section type
     private var appsPerPage: Int {
@@ -1150,129 +1150,47 @@ private struct AutoSwapSectionContent: View {
     
     var body: some View {
         VStack(spacing: 8) {
-            // Use the same approach as StaticSectionContent but with manual page control
-            switch section.type {
-            case "mustHave":
-                // Must-Have Apps layout (App Store style) - Paginated groups of 3
-                let appsChunks = Array(apps).chunkedInto(3) // Split apps into groups of 3
-                
-                if !appsChunks.isEmpty {
-                    TabView(selection: $currentPage) {
-                        ForEach(0..<appsChunks.count, id: \.self) { chunkIndex in
-                            VStack(spacing: 0) {
-                                ForEach(0..<appsChunks[chunkIndex].count, id: \.self) { appIndex in
-                                    let app = appsChunks[chunkIndex][appIndex]
-                                    AppMustHaveCard(app: app) {
-                                        // Only trigger tap if not dragging
-                                        if !isUserInteracting {
-                                            onAppTap(app)
-                                        }
-                                    }
-                                    
-                                    // Divider line between apps (except for last item in chunk)
-                                    if appIndex < appsChunks[chunkIndex].count - 1 {
-                                        Divider()
-                                            .padding(.leading, 100) // Align with text content
-                                    }
-                                }
-                                
-                                // Add spacer to fill remaining space if less than 3 apps
-                                if appsChunks[chunkIndex].count < 3 {
-                                    Spacer()
-                                }
-                            }
-                            .padding(.top, 10)
-                            .tag(chunkIndex)
-                        }
-                    }
-                    .tabViewStyle(PageTabViewStyle(indexDisplayMode: .automatic))
-                    .frame(height: 270) // Fixed height for 3 apps
-                    .onTapGesture {
-                        // Reset auto-scroll timer on any tap
-                        resetAutoScrollTimer()
-                    }
-                    .gesture(
-                        DragGesture(minimumDistance: 20)
-                            .onChanged { _ in
-                                pauseAutoScroll()
-                            }
-                            .onEnded { _ in
-                                resumeAutoScroll()
-                            }
-                    )
-                }
-                
-            default:
-                // For other types, use horizontal scrolling approach
-                GeometryReader { geometry in
-                    HStack(spacing: 0) {
-                        ForEach(0..<appPages.count, id: \.self) { index in
-                            StaticSectionContent(
-                                section: section,
-                                apps: appPages[index],
-                                onAppTap: onAppTap
-                            )
-                            .frame(width: geometry.size.width)
-                        }
-                    }
-                    .frame(width: geometry.size.width * CGFloat(appPages.count), alignment: .leading)
-                    .offset(x: -CGFloat(currentPage) * geometry.size.width)
-                    .animation(.easeOut(duration: 0.3), value: currentPage)
-                    .onTapGesture {
-                        // Reset auto-scroll timer on any tap
-                        resetAutoScrollTimer()
-                    }
-                    .gesture(
-                        DragGesture(minimumDistance: 20)
-                            .onChanged { value in
-                                pauseAutoScroll()
-                            }
-                            .onEnded { value in
-                                let threshold = value.translation.width
-                                var newPage = currentPage
-                                
-                                if abs(threshold) > geometry.size.width * 0.2 {
-                                    if threshold < 0 {
-                                        // Swipe left - next page
-                                        if currentPage < appPages.count - 1 {
-                                            newPage = currentPage + 1
-                                        }
-                                    } else {
-                                        // Swipe right - previous page
-                                        if currentPage > 0 {
-                                            newPage = currentPage - 1
-                                        }
-                                    }
-                                }
-                                
-                                withAnimation(.easeOut(duration: 0.3)) {
-                                    currentPage = newPage
-                                }
-                                
-                                resumeAutoScroll()
-                            }
-                    )
-                }
-                .frame(height: section.type == "hero" ? 300 : 200)
-                .clipped()
+            // Main content with current apps
+            StaticSectionContent(
+                section: section,
+                apps: currentApps,
+                onAppTap: onAppTap
+            )
+            .onTapGesture {
+                // Reset auto-scroll timer when user taps on the section
+                resetAutoScrollTimer()
             }
+            .onLongPressGesture(minimumDuration: 0.1) {
+                // Pause auto-scroll when user long presses
+                pauseAutoScroll()
+            } onPressingChanged: { isPressing in
+                if isPressing {
+                    pauseAutoScroll()
+                } else {
+                    resumeAutoScroll()
+                }
+            }
+            // Add drag gesture to detect swiping
+            .gesture(
+                DragGesture()
+                    .onChanged { _ in
+                        // Pause auto-scroll when user starts dragging
+                        pauseAutoScroll()
+                    }
+                    .onEnded { _ in
+                        // Reset timer when user finishes dragging
+                        resetAutoScrollTimer()
+                    }
+            )
             
-            // Page indicator for auto-swap sections with multiple pages (only for non-mustHave types)
-            if section.type != "mustHave" && appPages.count > 1 {
+            // Page indicator for auto-swap sections with multiple pages
+            if appPages.count > 1 {
                 HStack(spacing: 6) {
                     ForEach(0..<appPages.count, id: \.self) { index in
-                        Button(action: {
-                            withAnimation(.easeOut(duration: 0.3)) {
-                                currentPage = index
-                                // Reset auto-scroll timer when user interacts with page indicator
-                                resetAutoScrollTimer()
-                            }
-                        }) {
-                            Circle()
-                                .fill(index == currentPage ? Color.primary : Color.secondary.opacity(0.3))
-                                .frame(width: index == currentPage ? 8 : 6, height: index == currentPage ? 8 : 6)
-                        }
-                        .buttonStyle(PlainButtonStyle())
+                        Circle()
+                            .fill(index == currentPage ? Color.primary : Color.secondary.opacity(0.3))
+                            .frame(width: 6, height: 6)
+                            .animation(.easeInOut(duration: 0.3), value: currentPage)
                     }
                 }
                 .padding(.horizontal, 20)
@@ -1281,9 +1199,27 @@ private struct AutoSwapSectionContent: View {
         }
         .onAppear {
             startAutoSwap()
+            // Add observers for user interaction notifications
+            NotificationCenter.default.addObserver(
+                forName: .userInteractionStarted,
+                object: nil,
+                queue: .main
+            ) { _ in
+                pauseAutoScroll()
+            }
+            
+            NotificationCenter.default.addObserver(
+                forName: .userInteractionEnded,
+                object: nil,
+                queue: .main
+            ) { _ in
+                resumeAutoScroll()
+            }
         }
         .onDisappear {
             stopAutoSwap()
+            // Remove observers
+            NotificationCenter.default.removeObserver(self)
         }
         .onChange(of: section.id) { _ in
             // Restart timer if section changes
@@ -1303,10 +1239,8 @@ private struct AutoSwapSectionContent: View {
         timer = Timer.scheduledTimer(withTimeInterval: timeInterval, repeats: true) { _ in
             // Only auto-scroll if user is not interacting
             if !isUserInteracting {
-                DispatchQueue.main.async {
-                    withAnimation(.easeInOut(duration: 0.5)) {
-                        currentPage = (currentPage + 1) % max(1, appPages.count)
-                    }
+                withAnimation(.easeInOut(duration: 0.5)) {
+                    currentPage = (currentPage + 1) % appPages.count
                 }
             }
         }
@@ -1328,19 +1262,24 @@ private struct AutoSwapSectionContent: View {
     private func resumeAutoScroll() {
         // Reset the interaction timer
         interactionTimer?.invalidate()
-        interactionTimer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: false) { _ in
-            DispatchQueue.main.async {
-                self.isUserInteracting = false
-            }
+        interactionTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: false) { _ in
+            isUserInteracting = false
         }
     }
     
-    // Reset auto-scroll timer
+    // Reset auto-scroll timer when user interacts
     private func resetAutoScrollTimer() {
-        stopAutoSwap()
-        startAutoSwap()
+        // Pause auto-scroll immediately
+        pauseAutoScroll()
+        
+        // Restart the timer after a delay
+        interactionTimer?.invalidate()
+        interactionTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { _ in
+            isUserInteracting = false
+        }
     }
 }
+
 // Add extension for notification names
 extension Notification.Name {
     static let userInteractionStarted = Notification.Name("UserInteractionStarted")
