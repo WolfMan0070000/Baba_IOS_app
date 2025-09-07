@@ -1200,65 +1200,241 @@ private struct AutoSwapSectionContent: View {
                                 resumeAutoScroll()
                             }
                     )
+                    .overlay(
+                        // Peek preview overlay - show next page preview on the right edge
+                        HStack {
+                            Spacer()
+                            if appsChunks.count > 1 {
+                                Rectangle()
+                                    .fill(LinearGradient(
+                                        gradient: Gradient(colors: [
+                                            Color.clear,
+                                            Color(UIColor.systemBackground).opacity(0.3)
+                                        ]),
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    ))
+                                    .frame(width: 40)
+                            }
+                        },
+                        alignment: .trailing
+                    )
                 }
                 
-            default:
-                // For other types, use horizontal scrolling approach
-                GeometryReader { geometry in
-                    HStack(spacing: 0) {
-                        ForEach(0..<appPages.count, id: \.self) { index in
-                            StaticSectionContent(
-                                section: section,
-                                apps: appPages[index],
-                                onAppTap: onAppTap
-                            )
-                            .frame(width: geometry.size.width)
+            case "grid":
+                // Grid layout with auto-swap functionality
+                // Using the same LazyVGrid approach as StaticSectionContent but with pagination
+                let appsChunks = Array(apps).chunkedInto(6) // 2 rows of 3 apps per page
+                
+                if !appsChunks.isEmpty {
+                    TabView(selection: $currentPage) {
+                        ForEach(0..<appsChunks.count, id: \.self) { chunkIndex in
+                            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: 3), spacing: 16) {
+                                ForEach(appsChunks[chunkIndex], id: \.id) { app in
+                                    AppGridCard(app: app) {
+                                        // Only trigger tap if not dragging
+                                        if !isUserInteracting {
+                                            onAppTap(app)
+                                        }
+                                    }
+                                }
+                                
+                                // Add spacer to fill remaining space if less than 6 apps
+                                if appsChunks[chunkIndex].count < 6 {
+                                    ForEach(0..<(6 - appsChunks[chunkIndex].count)) { _ in
+                                        Color.clear.frame(height: 100)
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, 20)
+                            .tag(chunkIndex)
                         }
                     }
-                    .frame(width: geometry.size.width * CGFloat(appPages.count), alignment: .leading)
-                    .offset(x: -CGFloat(currentPage) * geometry.size.width)
-                    .animation(.easeOut(duration: 0.3), value: currentPage)
+                    .tabViewStyle(PageTabViewStyle(indexDisplayMode: .automatic))
+                    .frame(height: 250) // Fixed height for 2 rows of grid cards
                     .onTapGesture {
                         // Reset auto-scroll timer on any tap
                         resetAutoScrollTimer()
                     }
                     .gesture(
                         DragGesture(minimumDistance: 20)
-                            .onChanged { value in
+                            .onChanged { _ in
                                 pauseAutoScroll()
                             }
-                            .onEnded { value in
-                                let threshold = value.translation.width
-                                var newPage = currentPage
-                                
-                                if abs(threshold) > geometry.size.width * 0.2 {
-                                    if threshold < 0 {
-                                        // Swipe left - next page
-                                        if currentPage < appPages.count - 1 {
-                                            newPage = currentPage + 1
-                                        }
-                                    } else {
-                                        // Swipe right - previous page
-                                        if currentPage > 0 {
-                                            newPage = currentPage - 1
-                                        }
-                                    }
-                                }
-                                
-                                withAnimation(.easeOut(duration: 0.3)) {
-                                    currentPage = newPage
-                                }
-                                
+                            .onEnded { _ in
                                 resumeAutoScroll()
                             }
                     )
                 }
-                .frame(height: section.type == "hero" ? 300 : 200)
-                .clipped()
+                
+            case "banner":
+                // Banner layout with auto-swap functionality
+                // Using the same ScrollView approach as StaticSectionContent but with pagination
+                let appsChunks = Array(apps).chunkedInto(3) // 3 banner cards per page
+                
+                if !appsChunks.isEmpty {
+                    TabView(selection: $currentPage) {
+                        ForEach(0..<appsChunks.count, id: \.self) { chunkIndex in
+                            HStack(spacing: 16) {
+                                ForEach(Array(appsChunks[chunkIndex].enumerated()), id: \.element.id) { _, app in
+                                    AppBannerCard(app: app) {
+                                        // Only trigger tap if not dragging
+                                        if !isUserInteracting {
+                                            onAppTap(app)
+                                        }
+                                    }
+                                }
+                                
+                                // Fill empty spaces if less than 3 apps
+                                if appsChunks[chunkIndex].count < 3 {
+                                    ForEach(0..<(3 - appsChunks[chunkIndex].count)) { _ in
+                                        Color.clear.frame(height: 140)
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, 20)
+                            .tag(chunkIndex)
+                        }
+                    }
+                    .tabViewStyle(PageTabViewStyle(indexDisplayMode: .automatic))
+                    .frame(height: 140) // Fixed height for banner cards
+                    .onTapGesture {
+                        // Reset auto-scroll timer on any tap
+                        resetAutoScrollTimer()
+                    }
+                    .gesture(
+                        DragGesture(minimumDistance: 20)
+                            .onChanged { _ in
+                                pauseAutoScroll()
+                            }
+                            .onEnded { _ in
+                                resumeAutoScroll()
+                            }
+                    )
+                }
+                
+            case "hero":
+                // Hero layout with auto-swap functionality
+                // Using the same TabView approach as StaticSectionContent but with pagination
+                let appsChunks = Array(apps).chunkedInto(2) // 2 hero cards per page
+                
+                // Calculate height separately to avoid type checker complexity
+                let heroHeight: CGFloat = {
+                    guard !appsChunks.isEmpty, !appsChunks[0].isEmpty else { return 200 }
+                    let cardsPerPage = appsChunks[0].count
+                    let cardHeight = 160
+                    let spacing = 16
+                    let padding = 40
+                    return CGFloat(cardsPerPage * cardHeight + (cardsPerPage - 1) * spacing + padding)
+                }()
+                
+                if !appsChunks.isEmpty {
+                    TabView(selection: $currentPage) {
+                        ForEach(0..<appsChunks.count, id: \.self) { chunkIndex in
+                            VStack(spacing: 16) {
+                                ForEach(Array(appsChunks[chunkIndex].enumerated()), id: \.element.id) { _, app in
+                                    AppHeroCard(app: app) {
+                                        // Only trigger tap if not dragging
+                                        if !isUserInteracting {
+                                            onAppTap(app)
+                                        }
+                                    }
+                                }
+                                
+                                // Add spacer to fill remaining space if less than 2 apps
+                                if appsChunks[chunkIndex].count < 2 {
+                                    Spacer()
+                                }
+                            }
+                            .padding(.horizontal, 20)
+                            .tag(chunkIndex)
+                        }
+                    }
+                    .tabViewStyle(PageTabViewStyle(indexDisplayMode: .automatic))
+                    .frame(height: heroHeight)
+                    .overlay(
+                        // Peek preview overlay - show next page preview on the right edge
+                        HStack {
+                            Spacer()
+                            if appsChunks.count > 1 {
+                                Rectangle()
+                                    .fill(LinearGradient(
+                                        gradient: Gradient(colors: [
+                                            Color.clear,
+                                            Color(UIColor.systemBackground).opacity(0.3)
+                                        ]),
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    ))
+                                    .frame(width: 40)
+                            }
+                        },
+                        alignment: .trailing
+                    )
+                    .onTapGesture {
+                        // Reset auto-scroll timer on any tap
+                        resetAutoScrollTimer()
+                    }
+                    .gesture(
+                        DragGesture(minimumDistance: 20)
+                            .onChanged { _ in
+                                pauseAutoScroll()
+                            }
+                            .onEnded { _ in
+                                resumeAutoScroll()
+                            }
+                    )
+                }
+                
+            default:
+                // For other types (editorsChoice, personalized, trending, newReleases, and default carousel), 
+                // use horizontal scrolling approach with AppListCard
+                let appsChunks = Array(apps).chunkedInto(5) // 5 list cards per page
+                
+                if !appsChunks.isEmpty {
+                    TabView(selection: $currentPage) {
+                        ForEach(0..<appsChunks.count, id: \.self) { chunkIndex in
+                            HStack(spacing: 16) {
+                                ForEach(Array(appsChunks[chunkIndex].enumerated()), id: \.element.id) { _, app in
+                                    AppListCard(app: app) {
+                                        // Only trigger tap if not dragging
+                                        if !isUserInteracting {
+                                            onAppTap(app)
+                                        }
+                                    }
+                                }
+                                
+                                // Fill empty spaces if less than 5 apps
+                                if appsChunks[chunkIndex].count < 5 {
+                                    ForEach(0..<(5 - appsChunks[chunkIndex].count)) { _ in
+                                        Color.clear.frame(width: 80, height: 100)
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, 20)
+                            .tag(chunkIndex)
+                        }
+                    }
+                    .tabViewStyle(PageTabViewStyle(indexDisplayMode: .automatic))
+                    .frame(height: 100) // Fixed height for list cards
+                    .onTapGesture {
+                        // Reset auto-scroll timer on any tap
+                        resetAutoScrollTimer()
+                    }
+                    .gesture(
+                        DragGesture(minimumDistance: 20)
+                            .onChanged { _ in
+                                pauseAutoScroll()
+                            }
+                            .onEnded { _ in
+                                resumeAutoScroll()
+                            }
+                    )
+                }
             }
             
-            // Page indicator for auto-swap sections with multiple pages (only for non-mustHave types)
-            if section.type != "mustHave" && appPages.count > 1 {
+            // Page indicator for auto-swap sections with multiple pages (only for TabView-based sections)
+            if appPages.count > 1 {
                 HStack(spacing: 6) {
                     ForEach(0..<appPages.count, id: \.self) { index in
                         Button(action: {
