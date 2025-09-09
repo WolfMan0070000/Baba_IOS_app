@@ -3,9 +3,11 @@
 //  Feather
 //
 //  Created by Assistant on 12.08.2025.
+//  Last Updated: 15.09.2025 - Apple-style redesign
 //
 
 import SwiftUI
+import NimbleViews
 import NukeUI
 import Feather
 
@@ -13,119 +15,375 @@ struct AppHeroCard: View {
     let app: IOSAppDTO
     let onTap: () -> Void
     
+    @State private var isPressed = false
+    @State private var isHovered = false
+    @State private var iconLoaded = false
+    
     var body: some View {
         Button(action: onTap) {
-            VStack(spacing: 12) {
-                // App Banner Image
-                LazyImage(url: URL(string: app.bannerUrl ?? app.iconUrl)) { state in
-                    if let image = state.image {
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(height: 120)
-                            .clipped()
-                            .accessibility(label: Text("\(app.displayName) banner image"))
-                    } else if state.error != nil {
-                        // Error state - fallback to icon
-                        LazyImage(url: URL(string: app.iconUrl)) { iconState in
-                            if let iconImage = iconState.image {
-                                iconImage
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(width: 60, height: 60)
-                                    .accessibility(label: Text("\(app.displayName) app icon"))
-                            } else {
-                                // Final fallback
-                                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                    .fill(Color.gray.opacity(0.1))
-                                    .frame(height: 120)
-                                    .overlay(
-                                        Image(systemName: "photo")
-                                            .foregroundColor(.secondary)
-                                    )
-                            }
-                        }
-                    } else {
-                        // Loading state
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(Color.gray.opacity(0.1))
-                            .frame(height: 120)
-                            .overlay(
-                                ProgressView()
-                            )
-                    }
-                }
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            VStack(spacing: 0) {
+                // Hero banner with app icon
+                heroBannerSection
                 
-                // App Info
-                HStack(spacing: 12) {
-                    // App Icon
-                    LazyImage(url: URL(string: app.iconUrl)) { state in
-                        if let image = state.image {
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(width: 40, height: 40)
-                                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                                .accessibility(label: Text("\(app.displayName) app icon"))
-                        } else {
-                            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                .fill(Color.gray.opacity(0.1))
-                                .frame(width: 40, height: 40)
-                                .overlay(
-                                    Image(systemName: "app")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                )
-                        }
-                    }
-                    
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(app.displayName)
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.primary)
-                            .lineLimit(1)
-                        
-                        if let developer = app.developer {
-                            Text(developer)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                                .lineLimit(1)
-                        }
-                    }
-                    
-                    Spacer()
-                    
-                    // Rating
-                    if let rating = app.rating, rating > 0 {
-                        HStack(spacing: 2) {
-                            Image(systemName: "star.fill")
-                                .font(.caption2)
-                                .foregroundColor(.yellow)
-                            Text("\(rating, specifier: "%.1f")")
-                                .font(.caption2)
-                                .fontWeight(.medium)
-                                .foregroundColor(.primary)
-                        }
-                    }
-                }
-                
-                // Description
-                if let description = app.displayShortDescription ?? app.displayDescription {
-                    Text(description)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .lineLimit(2)
-                        .multilineTextAlignment(.leading)
-                }
+                // App information section
+                appInfoSection
             }
-            .padding(16)
-            .background(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(Color(UIColor.secondarySystemGroupedBackground))
-            )
+            .background(modernCardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
+            .shadow(color: Color.black.opacity(0.08), radius: 16, x: 0, y: 8)
+            .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 3)
+            .scaleEffect(isPressed ? 0.98 : 1.0)
+            .animation(.easeInOut(duration: 0.1), value: isPressed)
         }
         .buttonStyle(PlainButtonStyle())
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in
+                    withAnimation(.easeInOut(duration: 0.1)) {
+                        isPressed = true
+                    }
+                }
+                .onEnded { _ in
+                    withAnimation(.easeInOut(duration: 0.1)) {
+                        isPressed = false
+                    }
+                }
+        )
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.2)) {
+                isHovered = hovering
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(app.displayName) app")
+        .accessibilityHint("Tap to view app details")
     }
+    
+    private var heroBannerSection: some View {
+        ZStack {
+            // Sophisticated background gradient
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Color.blue.opacity(0.15),
+                    Color.purple.opacity(0.1),
+                    Color.blue.opacity(0.05)
+                ]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .frame(height: 200)
+            
+            // Decorative elements
+            GeometryReader { geometry in
+                // Floating circles
+                ForEach(0..<6, id: \.self) { index in
+                    Circle()
+                        .fill(Color.white.opacity(0.05))
+                        .frame(width: CGFloat.random(in: 20...60))
+                        .position(
+                            x: CGFloat.random(in: 0...geometry.size.width),
+                            y: CGFloat.random(in: 0...geometry.size.height)
+                        )
+                        .animation(
+                            Animation.easeInOut(duration: Double.random(in: 3...6))
+                                .repeatForever(autoreverses: true)
+                                .delay(Double(index) * 0.5),
+                            value: isHovered
+                        )
+                }
+            }
+            
+            // Main app icon
+            modernAppIcon
+                .frame(width: 120, height: 120)
+        }
+        .frame(height: 200)
+    }
+    
+    private var modernAppIcon: some View {
+        ZStack {
+            // Sophisticated background with multiple layers
+            RoundedRectangle(cornerRadius: 32, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color.white.opacity(0.25),
+                            Color.white.opacity(0.1),
+                            Color.clear
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .blur(radius: 20)
+                .frame(width: 120, height: 120)
+            
+            // Main icon container
+            RoundedRectangle(cornerRadius: 30, style: .continuous)
+                .fill(Color(UIColor.tertiarySystemGroupedBackground))
+                .frame(width: 120, height: 120)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 30, style: .continuous)
+                        .strokeBorder(
+                            LinearGradient(
+                                gradient: Gradient(colors: [
+                                    Color.white.opacity(0.5),
+                                    Color.white.opacity(0.2)
+                                ]),
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1
+                        )
+                )
+            
+            LazyImage(url: URL(string: app.iconUrl)) { state in
+                if let image = state.image {
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 108, height: 108)
+                        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+                        .shadow(color: Color.black.opacity(0.15), radius: 12, x: 0, y: 6)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                                .strokeBorder(Color.white.opacity(0.3), lineWidth: 1)
+                        )
+                        .accessibility(label: Text("\(app.displayName) app icon"))
+                        .onAppear {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                iconLoaded = true
+                            }
+                        }
+                } else if state.error != nil {
+                    // Error state with modern styling
+                    RoundedRectangle(cornerRadius: 28, style: .continuous)
+                        .fill(Color.red.opacity(0.1))
+                        .frame(width: 108, height: 108)
+                        .overlay(
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.system(size: 36, weight: .medium))
+                                .foregroundColor(.red.opacity(0.7))
+                        )
+                        .shadow(color: Color.red.opacity(0.2), radius: 8, x: 0, y: 4)
+                        .accessibility(label: Text("Failed to load \(app.displayName) app icon"))
+                } else {
+                    // Loading state with shimmer effect
+                    RoundedRectangle(cornerRadius: 28, style: .continuous)
+                        .fill(Color.gray.opacity(0.1))
+                        .frame(width: 108, height: 108)
+                        .overlay(
+                            ProgressView()
+                                .scaleEffect(1.2)
+                                .tint(.secondary)
+                        )
+                        .shadow(color: Color.gray.opacity(0.15), radius: 6, x: 0, y: 3)
+                        .accessibility(label: Text("Loading \(app.displayName) app icon"))
+                }
+            }
+        }
+    }
+    
+    private var appInfoSection: some View {
+        VStack(spacing: 20) {
+            // App name and developer
+            VStack(spacing: 12) {
+                Text(app.displayName)
+                    .font(.system(size: 28, weight: .bold, design: .default))
+                    .foregroundColor(.primary)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
+                
+                if let developer = app.developer, !developer.isEmpty {
+                    Text(developer)
+                        .font(.system(size: 18, weight: .medium, design: .default))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                }
+            }
+            
+            // Rating and metadata
+            HStack(spacing: 24) {
+                if let rating = app.rating, rating > 0 {
+                    HStack(spacing: 8) {
+                        HStack(spacing: 3) {
+                            ForEach(0..<5) { index in
+                                Image(systemName: index < Int(rating.rounded()) ? "star.fill" : "star")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(index < Int(rating.rounded()) ? .orange : .gray.opacity(0.3))
+                            }
+                        }
+                        Text(String(format: "%.1f", rating))
+                            .font(.system(size: 16, weight: .semibold, design: .rounded))
+                            .foregroundColor(.primary)
+                    }
+                }
+                
+                if let fileSize = app.fileSize, !fileSize.isEmpty {
+                    Text(fileSize)
+                        .font(.system(size: 16, weight: .medium, design: .default))
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .fill(Color.secondary.opacity(0.1))
+                        )
+                }
+            }
+            
+            // Modern action button
+            modernActionButton
+        }
+        .padding(32)
+        .frame(maxWidth: .infinity)
+    }
+    
+    private var modernActionButton: some View {
+        HStack(spacing: 16) {
+            // Get button with modern styling
+            Text("GET")
+                .font(.system(size: 18, weight: .bold, design: .default))
+                .foregroundColor(.white)
+                .frame(width: 100, height: 44)
+                .background(
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .fill(
+                            LinearGradient(
+                                gradient: Gradient(colors: [
+                                    Color.blue,
+                                    Color.blue.opacity(0.8)
+                                ]),
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                        .shadow(color: Color.blue.opacity(0.4), radius: 8, x: 0, y: 4)
+                )
+            
+            // Download icon
+            Image(systemName: "arrow.down.circle.fill")
+                .font(.system(size: 24, weight: .medium))
+                .foregroundColor(.blue.opacity(0.7))
+        }
+    }
+    
+    private var modernCardBackground: some View {
+        ZStack {
+            // Base background with Apple-style material
+            RoundedRectangle(cornerRadius: 32, style: .continuous)
+                .fill(Color(UIColor.secondarySystemGroupedBackground))
+            
+            // Sophisticated gradient overlay
+            RoundedRectangle(cornerRadius: 32, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color.white.opacity(isHovered ? 0.12 : 0.06),
+                            Color.white.opacity(isHovered ? 0.04 : 0.02),
+                            Color.clear
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+            
+            // Modern border with gradient
+            RoundedRectangle(cornerRadius: 32, style: .continuous)
+                .strokeBorder(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color.white.opacity(isHovered ? 0.3 : 0.2),
+                            Color.gray.opacity(isHovered ? 0.25 : 0.15),
+                            Color.clear
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 0.5
+                )
+        }
+    }
+}
+
+#Preview {
+    VStack(spacing: 20) {
+        AppHeroCard(
+            app: IOSAppDTO(
+                id: 1,
+                bundleIdentifier: "com.example.app1",
+                name: "Sample App 1",
+                nameFa: "برنامه نمونه ۱",
+                version: "1.0.0",
+                description: "This is a sample app description that shows how the hero card looks with longer text content.",
+                descriptionFa: "این توضیحات نمونه برنامه است که نشان می‌دهد کارت قهرمان چگونه با متن طولانی‌تر به نظر می‌رسد.",
+                shortDescriptionFa: "برنامه نمونه",
+                shortDescriptionEn: "Sample App",
+                iconUrl: "https://example.com/icon1.png",
+                ipaUrl: "https://example.com/app1.ipa",
+                screenshots: nil,
+                bannerUrl: nil,
+                developer: "Developer Name",
+                hint: nil,
+                fileSize: "25.4 MB",
+                isPopular: false,
+                isProChoice: false,
+                isFeatured: false,
+                isAi: false,
+                whatsNew: nil,
+                whatsNewFa: nil,
+                whatsNewEn: nil,
+                averageRating: 4.5,
+                ratingCount: 128,
+                categoryId: 1,
+                category: nil,
+                createdAt: nil,
+                updatedAt: nil,
+                reviews: nil
+            ),
+            onTap: {}
+        )
+        .frame(width: 400)
+        
+        AppHeroCard(
+            app: IOSAppDTO(
+                id: 2,
+                bundleIdentifier: "com.example.app2",
+                name: "Another Sample App",
+                nameFa: "برنامه نمونه دیگر",
+                version: "2.0.0",
+                description: "This is another sample app description.",
+                descriptionFa: "این توضیحات نمونه برنامه دیگری است.",
+                shortDescriptionFa: "برنامه نمونه",
+                shortDescriptionEn: "Sample App",
+                iconUrl: "https://example.com/icon2.png",
+                ipaUrl: "https://example.com/app2.ipa",
+                screenshots: nil,
+                bannerUrl: nil,
+                developer: "Another Developer",
+                hint: nil,
+                fileSize: "30.2 MB",
+                isPopular: false,
+                isProChoice: false,
+                isFeatured: false,
+                isAi: false,
+                whatsNew: nil,
+                whatsNewFa: nil,
+                whatsNewEn: nil,
+                averageRating: 4.8,
+                ratingCount: 256,
+                categoryId: 1,
+                category: nil,
+                createdAt: nil,
+                updatedAt: nil,
+                reviews: nil
+            ),
+            onTap: {}
+        )
+        .frame(width: 400)
+    }
+    .padding()
+    .background(Color(UIColor.systemBackground))
 }

@@ -3,12 +3,12 @@
 //  Feather
 //
 //  Created by Assistant on 12.08.2025.
+//  Last Updated: 15.09.2025 - Apple-style redesign
 //
 
 import SwiftUI
 import NukeUI
 import Feather
-
 
 struct AppDetailView: View {
     let app: IOSAppDTO
@@ -22,44 +22,63 @@ struct AppDetailView: View {
     @State private var showingWriteReview = false
     @StateObject private var networkManager = NetworkManager.shared
     @ObservedObject private var authManager = AuthManager.shared
-    
+
+    // Animation states
+    @State private var headerOpacity: Double = 0.0
+    @State private var headerOffset: CGFloat = 50
+    @State private var screenshotsOpacity: Double = 0.0
+    @State private var screenshotsOffset: CGFloat = 30
+    @State private var descriptionOpacity: Double = 0.0
+    @State private var descriptionOffset: CGFloat = 30
+    @State private var infoOpacity: Double = 0.0
+    @State private var infoOffset: CGFloat = 30
+    @State private var reviewsOpacity: Double = 0.0
+    @State private var reviewsOffset: CGFloat = 30
+    @State private var downloadButtonScale: CGFloat = 0.8
+    @State private var downloadButtonOpacity: Double = 0.0
+
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    // Header Section
-                    headerSection
-                    
-                    // Screenshots Section
-                    if let screenshots = app.screenshotUrls, !screenshots.isEmpty {
-                        screenshotsSection(screenshots)
+            ZStack {
+                // Apple-style background
+                appleStyleBackground
+
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 32) {
+                        Spacer(minLength: 20)
+
+                        // Enhanced Header Section with Apple-style design
+                        headerSection
+
+                        // Screenshots Section with improved design
+                        if let screenshots = app.screenshotUrls, !screenshots.isEmpty {
+                            screenshotsSection(screenshots)
+                        }
+
+                        // Description Section with modern card design
+                        if let description = app.displayDescription, !description.isEmpty {
+                            descriptionSection(description)
+                        }
+
+                        // Information Section with Apple-style cards
+                        informationSection
+
+                        // Reviews Section with enhanced design
+                        reviewsSection
+
+                        Spacer(minLength: 120) // Space for floating download button
                     }
-                    
-                    // Description Section
-                    if let description = app.displayDescription, !description.isEmpty {
-                        descriptionSection(description)
-                    }
-                    
-                    // Information Section
-                    informationSection
-                    
-                    // Reviews Section
-                    reviewsSection
-                    
-                    Spacer(minLength: 100) // Space for floating download button
+                    .padding(.horizontal, 20)
                 }
-                .padding(.horizontal)
-                .padding(.top)
+                .ignoresSafeArea(.keyboard)
             }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Done") {
-                        dismiss()
-                    }
-                }
+            .navigationBarHidden(true)
+            .overlay(alignment: .topLeading) {
+                // Custom back button with Apple-style design
+                backButton
             }
             .overlay(alignment: .bottom) {
+                // Enhanced floating download button
                 downloadButton
             }
         }
@@ -77,256 +96,840 @@ struct AppDetailView: View {
             }
         }
         .onAppear {
+            setupInitialAnimations()
             loadReviews()
         }
     }
     
-    private var headerSection: some View {
-        HStack(alignment: .top, spacing: 16) {
-            // App Icon
-            LazyImage(url: URL(string: app.iconUrl)) { state in
-                if let image = state.image {
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 120, height: 120)
-                        .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
-                        .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
-                } else {
-                    RoundedRectangle(cornerRadius: 26, style: .continuous)
-                        .fill(Color.gray.opacity(0.1))
-                        .frame(width: 120, height: 120)
-                        .overlay(
-                            Image(systemName: "app.badge")
-                                .font(.largeTitle)
-                                .foregroundColor(.secondary)
+    // MARK: - Apple-style Background
+    private var appleStyleBackground: some View {
+        ZStack {
+            // Base gradient background
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Color(UIColor.systemBackground),
+                    Color(UIColor.secondarySystemGroupedBackground).opacity(0.9)
+                ]),
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+
+            // Subtle pattern overlay
+            GeometryReader { geometry in
+                Path { path in
+                    let width = geometry.size.width
+                    let height = geometry.size.height
+
+                    // Create subtle circular patterns
+                    for i in 0..<6 {
+                        let centerX = width * 0.15 + (width * 0.2 * CGFloat(i))
+                        let centerY = height * 0.25 + (height * 0.15 * CGFloat(i))
+                        let radius = min(width, height) * 0.1
+
+                        path.addArc(
+                            center: CGPoint(x: centerX, y: centerY),
+                            radius: radius,
+                            startAngle: .zero,
+                            endAngle: .degrees(360),
+                            clockwise: false
                         )
+                    }
                 }
+                .fill(
+                    RadialGradient(
+                        gradient: Gradient(colors: [
+                            Color.blue.opacity(0.02),
+                            Color.clear
+                        ]),
+                        center: .center,
+                        startRadius: 0,
+                        endRadius: min(geometry.size.width, geometry.size.height) * 0.1
+                    )
+                )
             }
-            
-            VStack(alignment: .leading, spacing: 8) {
-                Text(app.displayName)
-                    .font(.title2.bold())
-                    .lineLimit(2)
-                
-                if let developer = app.developer {
-                    Text(developer)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                }
-                
-                if let category = app.category {
-                    Text(category.displayName)
-                        .font(.caption)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color.blue.opacity(0.1))
-                        .foregroundColor(.blue)
-                        .clipShape(Capsule())
-                }
-                
-                // Rating and Reviews
-                if let rating = app.rating, rating > 0 {
-                    HStack(spacing: 4) {
-                        HStack(spacing: 2) {
-                            ForEach(0..<5) { index in
-                                Image(systemName: index < Int(rating) ? "star.fill" : "star")
-                                    .font(.caption)
-                                    .foregroundColor(.yellow)
-                            }
-                        }
-                        
-                        Text(String(format: "%.1f", rating))
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        
-                        if let reviewCount = app.reviewCount, reviewCount > 0 {
-                            Text("(\(reviewCount))")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                }
-                
-                // Badges
-                HStack(spacing: 8) {
-                    if app.isNew == true {
-                        Text(.localized("NEW"))
-                            .font(.caption2.weight(.semibold))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.green)
-                            .clipShape(Capsule())
-                    }
-                    
-                    if app.isFeatured == true {
-                        Text(.localized("FEATURED"))
-                            .font(.caption2.weight(.semibold))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.orange)
-                            .clipShape(Capsule())
-                    }
-                }
-            }
-            
-            Spacer()
         }
     }
+
+    // MARK: - Custom Back Button
+    private var backButton: some View {
+        Button(action: {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                dismiss()
+            }
+        }) {
+            ZStack {
+                Circle()
+                    .fill(Color(UIColor.secondarySystemGroupedBackground))
+                    .frame(width: 40, height: 40)
+                    .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.primary)
+            }
+        }
+        .padding(.leading, 20)
+        .padding(.top, 16)
+        .accessibilityLabel("Go back")
+        .accessibilityHint("Double tap to return to previous screen")
+    }
+
+    private var headerSection: some View {
+        VStack(spacing: 24) {
+            // Hero Banner Section
+            heroBannerSection
+        }
+        .opacity(headerOpacity)
+        .offset(y: headerOffset)
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.6).delay(0.2)) {
+                headerOpacity = 1.0
+                headerOffset = 0
+            }
+        }
+    }
+
+    // MARK: - Hero Banner Section
+    private var heroBannerSection: some View {
+        ZStack {
+            if let bannerUrl = app.bannerUrl, let url = URL(string: bannerUrl) {
+                LazyImage(url: url) { state in
+                    if let image = state.image {
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(height: 200)
+                            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                            .overlay(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [
+                                        Color.clear,
+                                        Color.black.opacity(0.3)
+                                    ]),
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
+                    } else {
+                        // Fallback banner with app icon
+                        fallbackBanner
+                    }
+                }
+            } else {
+                fallbackBanner
+            }
+
+            // Overlay content
+            VStack(alignment: .leading, spacing: 8) {
+                Spacer()
+
+                HStack(spacing: 16) {
+                    // App Icon on banner
+                    LazyImage(url: URL(string: app.iconUrl)) { state in
+                        if let image = state.image {
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 60, height: 60)
+                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                .shadow(color: Color.black.opacity(0.3), radius: 6, x: 0, y: 3)
+                        } else {
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .fill(Color.white.opacity(0.2))
+                                .frame(width: 60, height: 60)
+                                .overlay(
+                                    Image(systemName: "app.badge.fill")
+                                        .font(.system(size: 24))
+                                        .foregroundColor(.white)
+                                )
+                        }
+                    }
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(app.displayName)
+                            .font(.system(size: 24, weight: .bold, design: .default))
+                            .foregroundColor(.white)
+                            .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
+
+                        if let developer = app.developer {
+                            Text(developer)
+                                .font(.system(size: 16, weight: .medium, design: .default))
+                                .foregroundColor(.white.opacity(0.9))
+                                .shadow(color: Color.black.opacity(0.3), radius: 1, x: 0, y: 1)
+                        }
+                    }
+
+                    Spacer()
+                }
+                .padding(20)
+            }
+        }
+        .frame(height: 200)
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .shadow(color: Color.black.opacity(0.1), radius: 12, x: 0, y: 6)
+    }
+
+    private var fallbackBanner: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color.blue.opacity(0.8),
+                            Color.blue.opacity(0.4)
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+
+            // Pattern overlay
+            GeometryReader { geometry in
+                Path { path in
+                    let width = geometry.size.width
+                    let height = geometry.size.height
+
+                    for i in 0..<8 {
+                        let x = width * 0.1 * CGFloat(i + 1)
+                        let y = height * 0.2 + (height * 0.05 * CGFloat(i))
+                        path.addEllipse(in: CGRect(x: x - 10, y: y - 10, width: 20, height: 20))
+                    }
+                }
+                .fill(Color.white.opacity(0.1))
+            }
+        }
+    }
+
     
     private func screenshotsSection(_ screenshots: [String]) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(.localized("Screenshots"))
-                .font(.headline)
-            
+        VStack(alignment: .leading, spacing: 16) {
+            // Section Header
+            HStack {
+                Text("Screenshots")
+                    .font(.system(size: 20, weight: .bold, design: .default))
+                    .foregroundColor(.primary)
+
+                Spacer()
+
+                Text("\(screenshots.count)")
+                    .font(.system(size: 14, weight: .medium, design: .default))
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.secondary.opacity(0.1))
+                    .clipShape(Capsule())
+            }
+
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    ForEach(screenshots, id: \.self) { screenshot in
-                        LazyImage(url: URL(string: screenshot)) { state in
-                            if let image = state.image {
-                                image
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(width: 200, height: 350)
-                                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                                    .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
-                            } else {
-                                RoundedRectangle(cornerRadius: 16)
-                                    .fill(Color.gray.opacity(0.1))
-                                    .frame(width: 200, height: 350)
-                                    .overlay(
-                                        ProgressView()
-                                    )
+                HStack(spacing: 16) {
+                    ForEach(screenshots.indices, id: \.self) { index in
+                        let screenshot = screenshots[index]
+
+                        ZStack {
+                            LazyImage(url: URL(string: screenshot)) { state in
+                                if let image = state.image {
+                                    image
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(width: 220, height: 380)
+                                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                                } else {
+                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                        .fill(Color(UIColor.tertiarySystemGroupedBackground))
+                                        .frame(width: 220, height: 380)
+                                        .overlay(
+                                            VStack(spacing: 8) {
+                                                Image(systemName: "photo")
+                                                    .font(.system(size: 24))
+                                                    .foregroundColor(.secondary)
+                                                ProgressView()
+                                                    .scaleEffect(0.8)
+                                            }
+                                        )
+                                }
+                            }
+                            .frame(width: 220, height: 380)
+                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                            .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 4)
+
+                            // Screenshot number badge
+                            VStack {
+                                HStack {
+                                    Spacer()
+                                    ZStack {
+                                        Circle()
+                                            .fill(Color.black.opacity(0.6))
+                                            .frame(width: 24, height: 24)
+                                        Text("\(index + 1)")
+                                            .font(.system(size: 12, weight: .semibold))
+                                            .foregroundColor(.white)
+                                    }
+                                    .padding(8)
+                                }
+                                Spacer()
                             }
                         }
                         .onTapGesture {
-                            selectedScreenshotURL = screenshot
-                            showingScreenshotViewer = true
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                selectedScreenshotURL = screenshot
+                                showingScreenshotViewer = true
+                            }
                         }
+                        .accessibilityLabel("Screenshot \(index + 1) of \(screenshots.count)")
+                        .accessibilityHint("Double tap to view full size")
                     }
                 }
                 .padding(.horizontal, 4)
+                .padding(.vertical, 8)
+            }
+        }
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color(UIColor.secondarySystemGroupedBackground))
+                .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 3)
+        )
+        .opacity(screenshotsOpacity)
+        .offset(y: screenshotsOffset)
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.6).delay(0.4)) {
+                screenshotsOpacity = 1.0
+                screenshotsOffset = 0
             }
         }
     }
     
     private func descriptionSection(_ description: String) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(.localized("About"))
-                .font(.headline)
-            
+        VStack(alignment: .leading, spacing: 16) {
+            // Section Header
+            HStack {
+                Image(systemName: "text.book.closed")
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundColor(.blue)
+
+                Text("About This App")
+                    .font(.system(size: 20, weight: .bold, design: .default))
+                    .foregroundColor(.primary)
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.secondary)
+            }
+
+            // Description Text
             Text(description)
-                .font(.body)
-                .lineSpacing(4)
+                .font(.system(size: 16, weight: .regular, design: .default))
+                .foregroundColor(.secondary)
+                .lineSpacing(6)
+                .fixedSize(horizontal: false, vertical: true)
+
+            // What's New section (if available)
+            if let whatsNew = app.displayWhatsNew, !whatsNew.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.orange)
+
+                        Text("What's New")
+                            .font(.system(size: 16, weight: .semibold, design: .default))
+                            .foregroundColor(.primary)
+                    }
+
+                    Text(whatsNew)
+                        .font(.system(size: 14, weight: .regular, design: .default))
+                        .foregroundColor(.secondary)
+                        .lineSpacing(4)
+                }
+                .padding(.top, 8)
+            }
+        }
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color(UIColor.secondarySystemGroupedBackground))
+                .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 3)
+        )
+        .opacity(descriptionOpacity)
+        .offset(y: descriptionOffset)
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.6).delay(0.6)) {
+                descriptionOpacity = 1.0
+                descriptionOffset = 0
+            }
         }
     }
     
     private var informationSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(.localized("Information"))
-                .font(.headline)
-            
+            // Section Header
+            HStack {
+                Image(systemName: "info.circle")
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundColor(.blue)
+
+                Text("Information")
+                    .font(.system(size: 20, weight: .bold, design: .default))
+                    .foregroundColor(.primary)
+
+                Spacer()
+            }
+
+            // Information Grid
             VStack(spacing: 12) {
-                InfoRow(title: .localized("Version"), value: app.version)
-                
-                if let size = app.size {
-                    InfoRow(title: .localized("Size"), value: size)
+                // Version and Size row
+                HStack(spacing: 16) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "tag")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.secondary)
+                                .frame(width: 20)
+
+                            Text("Version")
+                                .font(.system(size: 14, weight: .medium, design: .default))
+                                .foregroundColor(.secondary)
+                        }
+
+                        Text(app.version)
+                            .font(.system(size: 16, weight: .semibold, design: .default))
+                            .foregroundColor(.primary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(16)
+                    .background(Color(UIColor.tertiarySystemGroupedBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+                    if let size = app.size {
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "internaldrive")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(.secondary)
+                                    .frame(width: 20)
+
+                                Text("Size")
+                                    .font(.system(size: 14, weight: .medium, design: .default))
+                                    .foregroundColor(.secondary)
+                            }
+
+                            Text(size)
+                                .font(.system(size: 16, weight: .semibold, design: .default))
+                                .foregroundColor(.primary)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(16)
+                        .background(Color(UIColor.tertiarySystemGroupedBackground))
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    }
                 }
-                
-                InfoRow(title: .localized("Bundle ID"), value: app.bundleIdentifier)
-                
+
+                // Bundle ID row
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "number.square")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.secondary)
+                            .frame(width: 20)
+
+                        Text("Bundle ID")
+                            .font(.system(size: 14, weight: .medium, design: .default))
+                            .foregroundColor(.secondary)
+                    }
+
+                    Text(app.bundleIdentifier)
+                        .font(.system(size: 14, weight: .regular, design: .monospaced))
+                        .foregroundColor(.primary)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.8)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(16)
+                .background(Color(UIColor.tertiarySystemGroupedBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+                // Category row
                 if let category = app.category {
-                    InfoRow(title: .localized("Category"), value: category.displayName)
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "folder")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.secondary)
+                                .frame(width: 20)
+
+                            Text("Category")
+                                .font(.system(size: 14, weight: .medium, design: .default))
+                                .foregroundColor(.secondary)
+                        }
+
+                        HStack(spacing: 8) {
+                            Image(systemName: category.icon ?? "folder")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.blue)
+
+                            Text(category.displayName)
+                                .font(.system(size: 16, weight: .semibold, design: .default))
+                                .foregroundColor(.primary)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(16)
+                    .background(Color(UIColor.tertiarySystemGroupedBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
+
+                // Compatibility section
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "iphone")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.secondary)
+                            .frame(width: 20)
+
+                        Text("Compatibility")
+                            .font(.system(size: 14, weight: .medium, design: .default))
+                            .foregroundColor(.secondary)
+                    }
+
+                    HStack(spacing: 12) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "iphone")
+                                .font(.system(size: 14))
+                                .foregroundColor(.blue)
+                            Text("iPhone")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(.primary)
+                        }
+
+                        HStack(spacing: 4) {
+                            Image(systemName: "ipad")
+                                .font(.system(size: 14))
+                                .foregroundColor(.blue)
+                            Text("iPad")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(.primary)
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(16)
+                .background(Color(UIColor.tertiarySystemGroupedBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+        }
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color(UIColor.secondarySystemGroupedBackground))
+                .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 3)
+        )
+        .opacity(infoOpacity)
+        .offset(y: infoOffset)
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.6).delay(0.8)) {
+                infoOpacity = 1.0
+                infoOffset = 0
             }
         }
     }
     
     private var reviewsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
+            // Section Header
             HStack {
-                Text(.localized("Reviews"))
-                    .font(.headline)
-                
+                Image(systemName: "star.circle")
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundColor(.orange)
+
+                Text("Reviews & Ratings")
+                    .font(.system(size: 20, weight: .bold, design: .default))
+                    .foregroundColor(.primary)
+
                 Spacer()
-                
+
                 if !reviews.isEmpty {
-                    Button(action: { showingAllReviews = true }) {
-                        Text(.localized("See All"))
-                            .font(.subheadline)
-                            .foregroundColor(.blue)
+                    Button(action: {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            showingAllReviews = true
+                        }
+                    }) {
+                        HStack(spacing: 4) {
+                            Text("See All")
+                                .font(.system(size: 14, weight: .medium, design: .default))
+                                .foregroundColor(.blue)
+
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.blue)
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.blue.opacity(0.1))
+                        .clipShape(Capsule())
                     }
                 }
             }
+
+            // Rating Summary
+            if let rating = app.rating, rating > 0 {
+                VStack(spacing: 12) {
+                    // Overall Rating
+                    HStack(spacing: 16) {
+                        VStack(spacing: 4) {
+                            Text(String(format: "%.1f", rating))
+                                .font(.system(size: 36, weight: .bold, design: .rounded))
+                                .foregroundColor(.primary)
+
+                            HStack(spacing: 2) {
+                                ForEach(0..<5) { index in
+                                    Image(systemName: index < Int(rating.rounded()) ? "star.fill" : "star")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(.yellow)
+                                }
+                            }
+
+                            if let reviewCount = app.reviewCount, reviewCount > 0 {
+                                Text("\(reviewCount) reviews")
+                                    .font(.system(size: 14, weight: .medium, design: .default))
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+
+                        Spacer()
+
+                        // Rating Distribution (real data)
+                        VStack(alignment: .leading, spacing: 6) {
+                            ForEach(1...5, id: \.self) { star in
+                                HStack(spacing: 8) {
+                                    Text("\(star)")
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundColor(.secondary)
+                                        .frame(width: 12)
+
+                                    Image(systemName: "star.fill")
+                                        .font(.system(size: 10))
+                                        .foregroundColor(.yellow)
+
+                                    GeometryReader { geometry in
+                                        ZStack(alignment: .leading) {
+                                            RoundedRectangle(cornerRadius: 2)
+                                                .fill(Color.secondary.opacity(0.2))
+                                                .frame(height: 4)
+
+                                            RoundedRectangle(cornerRadius: 2)
+                                                .fill(Color.yellow)
+                                                .frame(width: geometry.size.width * ratingDistribution(for: star), height: 4)
+                                        }
+                                    }
+                                    .frame(height: 4)
+                                }
+                            }
+                        }
+                        .frame(width: 120)
+                    }
+                }
+                .padding(20)
+                .background(Color(UIColor.tertiarySystemGroupedBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            }
             
+            // Reviews Content
             if isLoadingReviews {
-                HStack {
+                HStack(spacing: 12) {
                     ProgressView()
                         .scaleEffect(0.8)
-                    Text(.localized("Loading reviews..."))
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                }
-                .padding(.vertical, 20)
-            } else if reviews.isEmpty {
-                VStack(spacing: 12) {
-                    Image(systemName: "star")
-                        .font(.title2)
-                        .foregroundColor(.secondary)
-                    Text(.localized("No reviews yet"))
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                    Text(.localized("Be the first to review this app!"))
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    
-                    if authManager.isAuthenticated {
-                        Button(action: { showingWriteReview = true }) {
-                            Text(.localized("Write a Review"))
-                                .font(.subheadline.weight(.medium))
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 20)
-                                .padding(.vertical, 8)
-                                .background(Color.blue)
-                                .clipShape(Capsule())
-                        }
-                    } else {
-                        Text(.localized("Please log in to write a review"))
-                            .font(.caption)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Loading reviews...")
+                            .font(.system(size: 16, weight: .medium, design: .default))
+                            .foregroundColor(.primary)
+
+                        Text("Please wait while we fetch the latest reviews")
+                            .font(.system(size: 14, weight: .regular, design: .default))
                             .foregroundColor(.secondary)
                     }
+
+                    Spacer()
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 20)
+                .padding(20)
+                .background(Color(UIColor.tertiarySystemGroupedBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            } else if reviews.isEmpty {
+                VStack(spacing: 16) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.orange.opacity(0.1))
+                            .frame(width: 80, height: 80)
+
+                        Image(systemName: "star.circle")
+                            .font(.system(size: 40, weight: .medium))
+                            .foregroundColor(.orange)
+                    }
+
+                    VStack(spacing: 8) {
+                        Text("No Reviews Yet")
+                            .font(.system(size: 18, weight: .semibold, design: .default))
+                            .foregroundColor(.primary)
+
+                        Text("Be the first to share your experience with this app!")
+                            .font(.system(size: 14, weight: .regular, design: .default))
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+
+                    if authManager.isAuthenticated {
+                        Button(action: {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                showingWriteReview = true
+                            }
+                        }) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "square.and.pencil")
+                                    .font(.system(size: 16, weight: .medium))
+
+                                Text("Write a Review")
+                                    .font(.system(size: 16, weight: .semibold, design: .default))
+                            }
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(Color.blue)
+                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                            .shadow(color: Color.blue.opacity(0.3), radius: 8, x: 0, y: 4)
+                        }
+                        .padding(.top, 8)
+                    } else {
+                        VStack(spacing: 8) {
+                            Text("Please sign in to write a review")
+                                .font(.system(size: 14, weight: .regular, design: .default))
+                                .foregroundColor(.secondary)
+
+                            Button(action: {
+                                // Navigate to login
+                            }) {
+                                Text("Sign In")
+                                    .font(.system(size: 14, weight: .semibold, design: .default))
+                                    .foregroundColor(.blue)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 8)
+                                    .background(Color.blue.opacity(0.1))
+                                    .clipShape(Capsule())
+                            }
+                        }
+                    }
+                }
+                .padding(24)
+                .background(Color(UIColor.tertiarySystemGroupedBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             } else {
-                VStack(spacing: 12) {
+                VStack(spacing: 16) {
                     // Write Review Button
                     if authManager.isAuthenticated {
-                        Button(action: { showingWriteReview = true }) {
-                            HStack {
-                                Image(systemName: "square.and.pencil")
-                                Text(.localized("Write a Review"))
+                        Button(action: {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                showingWriteReview = true
                             }
-                            .font(.subheadline.weight(.medium))
+                        }) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "square.and.pencil")
+                                    .font(.system(size: 16, weight: .medium))
+
+                                Text("Write a Review")
+                                    .font(.system(size: 16, weight: .semibold, design: .default))
+                            }
                             .foregroundColor(.blue)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 14)
                             .background(Color.blue.opacity(0.1))
-                            .clipShape(Capsule())
-                        }
-                        .frame(maxWidth: .infinity, alignment: .trailing)
-                    }
-                    
-                    ForEach(reviews.prefix(3), id: \.id) { review in
-                        ReviewRowView(review: review)
-                        
-                        if review.id != reviews.prefix(3).last?.id {
-                            Divider()
+                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                         }
                     }
+
+                    // Recent Reviews
+                    VStack(spacing: 0) {
+                        ForEach(reviews.prefix(2), id: \.id) { review in
+                            VStack(spacing: 12) {
+                                HStack(alignment: .top, spacing: 12) {
+                                    // User Avatar
+                                    ZStack {
+                                        Circle()
+                                            .fill(Color.blue.opacity(0.1))
+                                            .frame(width: 40, height: 40)
+
+                                        Text(String((review.userName ?? "Anonymous").prefix(1)).uppercased())
+                                            .font(.system(size: 16, weight: .semibold, design: .default))
+                                            .foregroundColor(.blue)
+                                    }
+
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        // User name and rating
+                                        HStack {
+                                            Text(review.userName ?? "Anonymous User")
+                                                .font(.system(size: 16, weight: .semibold, design: .default))
+                                                .foregroundColor(.primary)
+
+                                            Spacer()
+
+                                            HStack(spacing: 2) {
+                                                ForEach(0..<5) { index in
+                                                    Image(systemName: index < Int(review.rating.rounded()) ? "star.fill" : "star")
+                                                        .font(.system(size: 12))
+                                                        .foregroundColor(.yellow)
+                                                }
+                                            }
+
+                                            Text(String(format: "%.1f", review.rating))
+                                                .font(.system(size: 14, weight: .medium, design: .rounded))
+                                                .foregroundColor(.secondary)
+                                        }
+
+                                        // Review text
+                                        if let reviewText = review.text ?? review.comment, !reviewText.isEmpty {
+                                            Text(reviewText)
+                                                .font(.system(size: 15, weight: .regular, design: .default))
+                                                .foregroundColor(.secondary)
+                                                .lineLimit(3)
+                                                .fixedSize(horizontal: false, vertical: true)
+                                        }
+
+                                        // Date
+                                        if let createdAt = review.createdAt {
+                                            Text(formatReviewDate(createdAt))
+                                                .font(.system(size: 13, weight: .regular, design: .default))
+                                                .foregroundColor(.secondary)
+                                        }
+                                    }
+                                }
+                            }
+                            .padding(16)
+
+                            if review.id != reviews.prefix(2).last?.id {
+                                Divider()
+                                    .padding(.horizontal, 16)
+                            }
+                        }
+                    }
+                    .background(Color(UIColor.tertiarySystemGroupedBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 }
+            }
+        }
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color(UIColor.secondarySystemGroupedBackground))
+                .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 3)
+        )
+        .opacity(reviewsOpacity)
+        .offset(y: reviewsOffset)
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.6).delay(1.0)) {
+                reviewsOpacity = 1.0
+                reviewsOffset = 0
             }
         }
     }
@@ -356,48 +959,146 @@ struct AppDetailView: View {
         }
     }
     
+    // MARK: - Rating Distribution Helper
+    private func ratingDistribution(for star: Int) -> Double {
+        guard !reviews.isEmpty else { return 0.0 }
+        
+        let starCount = reviews.filter { Int($0.rating.rounded()) == star }.count
+        let totalReviews = reviews.count
+        
+        return totalReviews > 0 ? Double(starCount) / Double(totalReviews) : 0.0
+    }
+    
+    private func formatReviewDate(_ dateString: String) -> String {
+        let formatter = ISO8601DateFormatter()
+        guard let date = formatter.date(from: dateString) else { return dateString }
+        
+        let displayFormatter = DateFormatter()
+        displayFormatter.dateStyle = .medium
+        displayFormatter.timeStyle = .none
+        
+        return displayFormatter.string(from: date)
+    }
+    
     private var downloadButton: some View {
-        VStack {
-            Spacer()
-            
+        VStack(spacing: 0) {
+
+            // Download button
             Button(action: downloadApp) {
-                HStack {
-                    Image(systemName: downloadButtonIcon)
-                        .font(.title2)
-                    
-                    if let download = currentDownload, !download.isCompleted {
-                        VStack(spacing: 2) {
+                ZStack {
+                    // Background with gradient
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .fill(downloadButtonColor)
+                        .frame(height: 60)
+                        .shadow(
+                            color: downloadButtonColor.opacity(0.4),
+                            radius: 12,
+                            x: 0,
+                            y: 6
+                        )
+
+                    // Button content
+                    HStack(spacing: 12) {
+                        // Icon
+                        ZStack {
+                            Circle()
+                                .fill(Color.white.opacity(0.2))
+                                .frame(width: 32, height: 32)
+
+                            Image(systemName: downloadButtonIcon)
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(.white)
+                        }
+
+                        // Text content
+                        VStack(alignment: .leading, spacing: 2) {
                             Text(downloadButtonText)
-                                .font(.headline)
-                            if download.progress > 0 {
-                                Text("\(Int(download.progress * 100))%")
-                                    .font(.caption)
-                                    .opacity(0.8)
+                                .font(.system(size: 17, weight: .semibold, design: .default))
+                                .foregroundColor(.white)
+
+                            if let download = currentDownload, !download.isCompleted && download.progress > 0 {
+                                Text("\(Int(download.progress * 100))% complete")
+                                    .font(.system(size: 13, weight: .regular, design: .default))
+                                    .foregroundColor(.white.opacity(0.9))
+                            } else if let download = currentDownload, download.isCompleted {
+                                Text("Ready to install")
+                                    .font(.system(size: 13, weight: .regular, design: .default))
+                                    .foregroundColor(.white.opacity(0.9))
                             }
                         }
-                    } else {
-                        Text(downloadButtonText)
-                            .font(.headline)
+
+                        Spacer()
+
+                        // Action indicator
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.white.opacity(0.8))
                     }
+                    .padding(.horizontal, 20)
                 }
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 50)
-                .background(downloadButtonColor)
-                .clipShape(Capsule())
-                .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
             }
             .disabled(isDownloadDisabled)
-            .padding(.horizontal)
-            .padding(.bottom, 34) // Safe area bottom
-            .background(
-                LinearGradient(
-                    colors: [Color.clear, Color(uiColor: .systemBackground)],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .frame(height: 100)
-            )
+            .opacity(isDownloadDisabled ? 0.6 : 1.0)
+            .padding(.horizontal, 20)
+            .padding(.bottom, 40)
+            .opacity(downloadButtonOpacity)
+            .scaleEffect(downloadButtonScale)
+            .onAppear {
+                withAnimation(.easeOut(duration: 0.8).delay(1.2)) {
+                    downloadButtonScale = 1.0
+                    downloadButtonOpacity = 1.0
+                }
+            }
+        }
+        .accessibilityLabel("\(downloadButtonText) button")
+        .accessibilityHint("Double tap to \(downloadButtonText.lowercased()) this app")
+    }
+
+    // MARK: - Helper Methods
+    private func setupInitialAnimations() {
+        // Reset all animation states
+        headerOpacity = 0.0
+        headerOffset = 50
+        screenshotsOpacity = 0.0
+        screenshotsOffset = 30
+        descriptionOpacity = 0.0
+        descriptionOffset = 30
+        infoOpacity = 0.0
+        infoOffset = 30
+        reviewsOpacity = 0.0
+        reviewsOffset = 30
+        downloadButtonScale = 0.8
+        downloadButtonOpacity = 0.0
+
+        // Start staggered animations
+        withAnimation(.easeOut(duration: 0.6).delay(0.2)) {
+            headerOpacity = 1.0
+            headerOffset = 0
+        }
+
+        withAnimation(.easeOut(duration: 0.6).delay(0.4)) {
+            screenshotsOpacity = 1.0
+            screenshotsOffset = 0
+        }
+
+        withAnimation(.easeOut(duration: 0.6).delay(0.6)) {
+            descriptionOpacity = 1.0
+            descriptionOffset = 0
+        }
+
+        withAnimation(.easeOut(duration: 0.6).delay(0.8)) {
+            infoOpacity = 1.0
+            infoOffset = 0
+        }
+
+        withAnimation(.easeOut(duration: 0.6).delay(1.0)) {
+            reviewsOpacity = 1.0
+            reviewsOffset = 0
+        }
+
+        withAnimation(.easeOut(duration: 0.8).delay(1.2)) {
+            downloadButtonScale = 1.0
+            downloadButtonOpacity = 1.0
         }
     }
     
@@ -521,322 +1222,6 @@ struct AppDetailView: View {
             let sourceUrl = "https://example.com/\(app.bundleIdentifier).json" // This should come from backend
             if let url = URL(string: sourceUrl) {
                 Storage.shared.addSource(url, name: app.displayName, identifier: app.bundleIdentifier, iconURL: URL(string: app.iconUrl), deferSave: false) { _ in }
-            }
-        }
-    }
-}
-
-private struct InfoRow: View {
-    let title: String
-    let value: String
-    
-    var body: some View {
-        HStack {
-            Text(title)
-                .foregroundColor(.secondary)
-            Spacer()
-            Text(value)
-                .fontWeight(.medium)
-        }
-    }
-}
-
-private struct ScreenshotDetailView: View {
-    let imageUrl: String
-    @Environment(\.dismiss) private var dismiss
-    
-    var body: some View {
-        NavigationView {
-            ZStack {
-                Color.black.ignoresSafeArea()
-                
-                LazyImage(url: URL(string: imageUrl)) { state in
-                    if let image = state.image {
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                    } else {
-                        ProgressView()
-                            .tint(.white)
-                    }
-                }
-            }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
-                        dismiss()
-                    }
-                    .foregroundColor(.white)
-                }
-            }
-        }
-    }
-}
-
-private struct ReviewRowView: View {
-    let review: Review
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 4) {
-                        ForEach(0..<5) { index in
-                            Image(systemName: index < Int(review.rating.rounded()) ? "star.fill" : "star")
-                                .font(.caption)
-                                .foregroundColor(.yellow)
-                        }
-                        
-                        Text(String(format: "%.1f", review.rating))
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    Text(review.userName ?? "Anonymous User")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                
-                Spacer()
-                
-                if let createdAt = review.createdAt {
-                    Text(formatReviewDate(createdAt))
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-            }
-            
-            if let reviewText = review.text ?? review.comment, !reviewText.isEmpty {
-                Text(reviewText)
-                    .font(.body)
-                    .lineLimit(3)
-            }
-        }
-        .padding(.vertical, 4)
-    }
-    
-    private func formatReviewDate(_ dateString: String) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
-        
-        if let date = formatter.date(from: dateString) {
-            let displayFormatter = DateFormatter()
-            displayFormatter.dateStyle = .medium
-            return displayFormatter.string(from: date)
-        }
-        
-        return dateString
-    }
-}
-
-private struct AllReviewsView: View {
-    let app: IOSAppDTO
-    let reviews: [Review]
-    @Environment(\.dismiss) private var dismiss
-    
-    var body: some View {
-        NavigationView {
-            ScrollView {
-                VStack(spacing: 16) {
-                    ForEach(reviews, id: \.id) { review in
-                        ReviewRowView(review: review)
-                        Divider()
-                    }
-                }
-                .padding()
-            }
-            .navigationTitle("Reviews")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
-                        dismiss()
-                    }
-                }
-            }
-        }
-    }
-}
-
-private struct WriteReviewView: View {
-    let app: IOSAppDTO
-    let onReviewSubmitted: (Review) -> Void
-    @Environment(\.dismiss) private var dismiss
-    
-    @State private var rating: Int = 5
-    @State private var reviewText: String = ""
-    @State private var userName: String = ""
-    @State private var isSubmitting = false
-    @State private var errorMessage: String?
-    
-    @StateObject private var networkManager = NetworkManager.shared
-    @ObservedObject private var authManager = AuthManager.shared
-    
-    var body: some View {
-        NavigationView {
-            Form {
-                Section {
-                    VStack(alignment: .leading, spacing: 16) {
-                        // App info
-                        HStack {
-                            LazyImage(url: URL(string: app.iconUrl)) { state in
-                                if let image = state.image {
-                                    image
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fit)
-                                        .frame(width: 60, height: 60)
-                                        .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
-                                } else {
-                                    RoundedRectangle(cornerRadius: 13, style: .continuous)
-                                        .fill(Color.gray.opacity(0.1))
-                                        .frame(width: 60, height: 60)
-                                }
-                            }
-                            
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(app.displayName)
-                                    .font(.headline)
-                                
-                                if let developer = app.developer {
-                                    Text(developer)
-                                        .font(.subheadline)
-                                        .foregroundColor(.secondary)
-                                }
-                            }
-                            
-                            Spacer()
-                        }
-                        
-                        // Rating Selection
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(.localized("Rating"))
-                                .font(.headline)
-                            
-                            HStack(spacing: 8) {
-                                ForEach(1...5, id: \.self) { star in
-                                    Button(action: { rating = star }) {
-                                        Image(systemName: star <= rating ? "star.fill" : "star")
-                                            .font(.title2)
-                                            .foregroundColor(star <= rating ? .yellow : .gray)
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
-                                }
-                                
-                                Spacer()
-                                
-                                Text(ratingText)
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                    }
-                }
-                
-                Section {
-                    TextField(.localized("Your name (optional)"), text: $userName)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                } header: {
-                    Text(.localized("Name"))
-                }
-                
-                Section {
-                    TextEditor(text: $reviewText)
-                        .frame(minHeight: 100)
-                        .overlay(alignment: .topLeading) {
-                            if reviewText.isEmpty {
-                                Text(.localized("Write your review here..."))
-                                    .foregroundColor(.secondary)
-                                    .padding(.top, 8)
-                                    .padding(.leading, 4)
-                                    .allowsHitTesting(false)
-                            }
-                        }
-                } header: {
-                    Text(.localized("Review"))
-                }
-                
-                if let errorMessage = errorMessage {
-                    Section {
-                        Text(errorMessage)
-                            .foregroundColor(.red)
-                    }
-                }
-            }
-            .navigationTitle(.localized("Write Review"))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button(.localized("Cancel")) {
-                        dismiss()
-                    }
-                }
-                
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(.localized("Submit")) {
-                        submitReview()
-                    }
-                    .disabled(isSubmitting || reviewText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
-            }
-            .disabled(isSubmitting)
-        }
-    }
-    
-    private var ratingText: String {
-        switch rating {
-        case 1: return String(localized: "Poor")
-        case 2: return String(localized: "Fair")
-        case 3: return String(localized: "Good")
-        case 4: return String(localized: "Very Good")
-        case 5: return String(localized: "Excellent")
-        default: return ""
-        }
-    }
-    
-    private func submitReview() {
-        guard !isSubmitting else { return }
-        guard !reviewText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            errorMessage = String(localized: "Please write a review")
-            return
-        }
-        
-        errorMessage = nil
-        isSubmitting = true
-        
-        let displayName = userName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty 
-            ? "Anonymous User" 
-            : userName.trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        Task {
-            do {
-                let review = try await networkManager.submitAppReview(
-                    appId: app.id,
-                    userName: displayName,
-                    rating: rating,
-                    text: reviewText.trimmingCharacters(in: .whitespacesAndNewlines),
-                    baseURL: authManager.apiBaseURL.absoluteString
-                )
-                
-                await MainActor.run {
-                    onReviewSubmitted(review)
-                    dismiss()
-                }
-            } catch ReviewError.alreadyReviewed {
-                await MainActor.run {
-                    errorMessage = String(localized: "You have already reviewed this app")
-                    isSubmitting = false
-                }
-            } catch ReviewError.authenticationRequired {
-                await MainActor.run {
-                    errorMessage = String(localized: "Please log in to submit a review")
-                    isSubmitting = false
-                }
-            } catch {
-                await MainActor.run {
-                    errorMessage = error.localizedDescription
-                    isSubmitting = false
-                }
             }
         }
     }
