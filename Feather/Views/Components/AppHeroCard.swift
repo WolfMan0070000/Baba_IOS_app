@@ -16,6 +16,7 @@ struct AppHeroCard: View {
     let onTap: () -> Void
     let onGetTap: (() -> Void)?
     
+    @ObservedObject private var downloadManager = DownloadManager.shared
     @State private var isHovered = false
     @State private var iconLoaded = false
     
@@ -225,41 +226,108 @@ struct AppHeroCard: View {
                 }
             }
             
-            // Modern action button
-            Button(action: { onGetTap?() }) {
-                modernActionButton
-            }
+            // Modern action button (stateful)
+            statefulHeroButton
         }
         .padding(20) // Reduced from 32 to make card more compact
         .frame(maxWidth: .infinity)
     }
-    
-    private var modernActionButton: some View {
-        HStack(spacing: 16) {
-            // Get button with modern styling
-            Text("GET")
-                .font(.system(size: 18, weight: .bold, design: .default))
-                .foregroundColor(.white)
-                .frame(width: 100, height: 44)
+
+    // MARK: - Download stateful button
+    @ViewBuilder
+    private var statefulHeroButton: some View {
+        let download = currentDownload
+        if let download = download {
+            Button(action: downloadAction(for: download)) {
+                statefulButtonContent(download: download)
+            }
+        } else {
+            Button(action: { onGetTap?() }) {
+                primaryButtonLabel(title: "GET", color: .blue, icon: "arrow.down.circle.fill")
+            }
+        }
+    }
+
+    // Current download for this app
+    private var currentDownload: Download? {
+        downloadManager.downloads.first { download in
+            download.fileName.contains(app.bundleIdentifier) || download.id.contains(app.bundleIdentifier)
+        }
+    }
+
+    // Build label for different states
+    @ViewBuilder
+    private func statefulButtonContent(download: Download) -> some View {
+        if download.isCompleted {
+            primaryButtonLabel(title: String(localized: "Open"), color: .green, icon: "checkmark.circle.fill")
+        } else if let task = download.task {
+            switch task.state {
+            case .running:
+                HStack(spacing: 12) {
+                    ProgressView(value: Double(download.progress))
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        .frame(width: 18, height: 18)
+                    Text("\(Int(download.progress * 100))%")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.white)
+                }
+                .frame(height: 44)
+                .padding(.horizontal, 18)
                 .background(
                     RoundedRectangle(cornerRadius: 22, style: .continuous)
-                        .fill(
-                            LinearGradient(
-                                gradient: Gradient(colors: [
-                                    Color.blue,
-                                    Color.blue.opacity(0.8)
-                                ]),
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                        )
+                        .fill(LinearGradient(colors: [.blue, .blue.opacity(0.8)], startPoint: .top, endPoint: .bottom))
                         .shadow(color: Color.blue.opacity(0.4), radius: 8, x: 0, y: 4)
                 )
-            
-            // Download icon
-            Image(systemName: "arrow.down.circle.fill")
-                .font(.system(size: 24, weight: .medium))
-                .foregroundColor(.blue.opacity(0.7))
+            case .suspended:
+                primaryButtonLabel(title: String(localized: "Paused"), color: .orange, icon: "pause.circle.fill")
+            case .canceling:
+                primaryButtonLabel(title: String(localized: "Cancelling"), color: .red, icon: "xmark.circle.fill")
+            case .completed:
+                primaryButtonLabel(title: String(localized: "Open"), color: .green, icon: "checkmark.circle.fill")
+            @unknown default:
+                primaryButtonLabel(title: String(localized: "Queued"), color: .blue, icon: "clock.fill")
+            }
+        } else {
+            primaryButtonLabel(title: String(localized: "Queued"), color: .blue, icon: "clock.fill")
+        }
+    }
+
+    private func primaryButtonLabel(title: String, color: Color, icon: String) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(.white)
+            Text(title)
+                .font(.system(size: 18, weight: .bold))
+                .foregroundColor(.white)
+        }
+        .frame(height: 44)
+        .padding(.horizontal, 20)
+        .background(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        gradient: Gradient(colors: [color, color.opacity(0.85)]),
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .shadow(color: color.opacity(0.35), radius: 8, x: 0, y: 4)
+        )
+    }
+
+    private func downloadAction(for download: Download) -> () -> Void {
+        return {
+            #if os(iOS)
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            #endif
+            if download.isCompleted {
+                NotificationCenter.default.post(name: NSNotification.Name("SwitchToLibraryTab"), object: nil)
+            } else if download.state == .downloading || download.task?.state == .running {
+                DownloadManager.shared.pauseDownload(download)
+            } else {
+                DownloadManager.shared.resumeDownload(download)
+            }
         }
     }
     

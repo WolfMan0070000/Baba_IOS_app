@@ -69,9 +69,50 @@ struct ServerView: View {
 			}
 			
 			Section {
+				// Show SSL certificate status
+				VStack(alignment: .leading, spacing: 8) {
+					let status = ServerInstaller.getSSLCertificateStatus()
+					
+					HStack {
+						Image(systemName: status.crt ? "checkmark.circle.fill" : "xmark.circle.fill")
+							.foregroundColor(status.crt ? .green : .red)
+						Text("Server Certificate (.crt)")
+						Spacer()
+					}
+					
+					HStack {
+						Image(systemName: status.pem ? "checkmark.circle.fill" : "xmark.circle.fill")
+							.foregroundColor(status.pem ? .green : .red)
+						Text("Private Key (.pem)")
+						Spacer()
+					}
+					
+					HStack {
+						Image(systemName: status.commonName ? "checkmark.circle.fill" : "xmark.circle.fill")
+							.foregroundColor(status.commonName ? .green : .red)
+						Text("Common Name")
+						Spacer()
+					}
+					
+					if !ServerInstaller.areSSLCertificatesAvailable() {
+						Text("SSL certificates are missing. They should be downloaded automatically, but you can also update them manually.")
+							.font(.caption)
+							.foregroundColor(.orange)
+							.padding(.top, 4)
+					}
+				}
+				.padding(.vertical, 4)
+				
 				Button(.localized("Update SSL Certificates"), systemImage: "arrow.down.doc") {
 					FR.downloadSSLCertificates(from: _serverPackUrl) { success in
-						if !success {
+						if success {
+							DispatchQueue.main.async {
+								UIAlertController.showAlertWithOk(
+									title: .localized("SSL Certificates"),
+									message: .localized("SSL certificates updated successfully!")
+								)
+							}
+						} else {
 							DispatchQueue.main.async {
 								UIAlertController.showAlertWithOk(
 									title: .localized("SSL Certificates"),
@@ -81,6 +122,8 @@ struct ServerView: View {
 						}
 					}
 				}
+			} header: {
+				Text("SSL Certificate Status")
 			}
 		}
 	}

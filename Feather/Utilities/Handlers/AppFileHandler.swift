@@ -87,17 +87,34 @@ final class AppFileHandler: NSObject, @unchecked Sendable {
 			throw ImportedFileHandlerError.corruptedFile
 		}
 		
-		// Check minimum file size (empty or tiny files are likely corrupted)
+		// Get file size for validation
 		let attributes = try fileManager.attributesOfItem(atPath: _ipa.path)
 		let fileSize = attributes[.size] as? Int64 ?? 0
 		
-		if fileSize < 1024 { // Less than 1KB is definitely corrupted
+		// Only reject truly empty files (0 bytes) - allow small files as they might be valid
+		if fileSize == 0 {
 			throw ImportedFileHandlerError.corruptedFile
 		}
 		
-		// Validate ZIP header for IPA/TIPA files
-		if _ipa.pathExtension.lowercased() == "ipa" || _ipa.pathExtension.lowercased() == "tipa" {
-			try validateZipHeader()
+		// For very small files (< 1KB), perform basic ZIP header validation if it's an IPA/TIPA
+		if fileSize < 1024 && (_ipa.pathExtension.lowercased() == "ipa" || _ipa.pathExtension.lowercased() == "tipa") {
+			// Only validate ZIP header if file is supposed to be a ZIP but is suspiciously small
+			do {
+				try validateZipHeader()
+			} catch {
+				// If ZIP validation fails on a small file, it's likely corrupted
+				throw ImportedFileHandlerError.corruptedFile
+			}
+		} else if fileSize >= 1024 {
+			// For larger files, do a lenient ZIP header check for IPA/TIPA files only
+			if _ipa.pathExtension.lowercased() == "ipa" || _ipa.pathExtension.lowercased() == "tipa" {
+				do {
+					try validateZipHeaderLenient()
+				} catch {
+					// Log the error but don't fail the entire process for large files
+					Logger.misc.warning("[\(self._uuid)] ZIP header validation failed, but proceeding with large file: \(error.localizedDescription)")
+				}
+			}
 		}
 		
 		Logger.misc.info("[\(self._uuid)] File integrity validation passed for: \(self._ipa.lastPathComponent) (\(fileSize) bytes)")
@@ -105,13 +122,14 @@ final class AppFileHandler: NSObject, @unchecked Sendable {
 	
 	private func validateZipHeader() throws {
 		let fileHandle = try FileHandle(forReadingFrom: _ipa)
-		defer { fileHandle.closeFile() }
+		defer { 
+			try? fileHandle.close()
+		}
 		
 		let headerData = fileHandle.readData(ofLength: 4)
-		fileHandle.closeFile()
 		
 		// ZIP files should start with "PK" (0x504B)
-		if headerData.count < 4 {
+		if headerData.count < 2 {
 			throw ImportedFileHandlerError.corruptedFile
 		}
 		
@@ -119,6 +137,31 @@ final class AppFileHandler: NSObject, @unchecked Sendable {
 		if !headerData.starts(with: zipHeader) {
 			throw ImportedFileHandlerError.corruptedFile
 		}
+	}
+	
+	private func validateZipHeaderLenient() throws {
+		// Lenient validation that doesn't fail on edge cases
+		guard let fileHandle = try? FileHandle(forReadingFrom: _ipa) else {
+			// If we can't open the file for reading, that's a problem
+			throw ImportedFileHandlerError.corruptedFile
+		}
+		
+		defer { 
+			try? fileHandle.close()
+		}
+		
+		// Try to read ZIP header, but be more forgiving
+		let headerData = fileHandle.readData(ofLength: 8)
+		
+		if headerData.count >= 2 {
+			let zipHeader = Data([0x50, 0x4B]) // "PK" signature
+			if !headerData.starts(with: zipHeader) {
+				// Check if it might be a different but valid archive format
+				// Don't throw error for large files - let the extraction process handle it
+				Logger.misc.info("[\(self._uuid)] File doesn't have standard ZIP header, but proceeding with extraction")
+			}
+		}
+		// If we can't read enough data, still proceed - the extraction will catch real corruption
 	}
 	
 	private func ensureSufficientDiskSpace() async throws {

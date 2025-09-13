@@ -41,11 +41,7 @@ struct DownloadHeaderView: View {
 }
 
 struct DownloadItemView: View {
-	let download: Download
-	@State private var progress: Double = 0
-	@State private var bytesDownloaded: Int64 = 0
-	@State private var totalBytes: Int64 = 0
-	@State private var unpackageProgress: Double = 0
+	@ObservedObject var download: Download
 	@State private var showCompletionMessage: Bool = false
 	
 	var body: some View {
@@ -84,8 +80,8 @@ struct DownloadItemView: View {
 					Text(verbatim: "\(Int(overallProgress * 100))%")
 						.contentTransition(.numericText())
 					Spacer()
-					if totalBytes > 0 {
-						Text(verbatim: "\($bytesDownloaded.wrappedValue.formattedByteCount) / \(totalBytes.formattedByteCount)")
+					if download.totalBytes > 0 {
+						Text(verbatim: "\(download.bytesDownloaded.formattedByteCount) / \(download.totalBytes.formattedByteCount)")
 							.contentTransition(.numericText())
 					}
 				}
@@ -94,10 +90,6 @@ struct DownloadItemView: View {
 			}
 		}
 		.padding(.vertical, 4)
-		.onReceive(download.$progress) { self.progress = $0 }
-		.onReceive(download.$bytesDownloaded) { self.bytesDownloaded = $0 }
-		.onReceive(download.$totalBytes) { self.totalBytes = $0 }
-		.onReceive(download.$unpackageProgress) { self.unpackageProgress = $0 }
 		.onReceive(download.$state) { state in
 			if state == .completed {
 				// Show completion message briefly
@@ -108,7 +100,7 @@ struct DownloadItemView: View {
 	
 	private var overallProgress: Double {
 		download.onlyArchiving
-		? unpackageProgress
-		: (0.3 * unpackageProgress) + (0.7 * progress)
+		? download.unpackageProgress
+		: (0.3 * download.unpackageProgress) + (0.7 * download.progress)
 	}
 }

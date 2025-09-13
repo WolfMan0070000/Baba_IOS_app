@@ -161,6 +161,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         _createPipeline()
         _createDocumentsDirectories()
         ResetView.clearWorkCache()
+        
+        // Check and download SSL certificates if needed
+        _ensureSSLCertificatesAvailable()
+        
 		return true
 	}
     
@@ -212,4 +216,47 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 			try? fileManager.createDirectoryIfNeeded(at: url)
 		}
 	}
+    
+    /// Check if SSL certificates exist and download them if missing
+    private func _ensureSSLCertificatesAvailable() {
+        // Check if SSL certificates already exist
+        let serverCrt = URL.documentsDirectory.appendingPathComponent("server.crt")
+        let serverPem = URL.documentsDirectory.appendingPathComponent("server.pem")
+        let commonName = URL.documentsDirectory.appendingPathComponent("commonName.txt")
+        
+        let fileManager = FileManager.default
+        
+        // If all SSL certificate files exist, we're good
+        if fileManager.fileExists(atPath: serverCrt.path) &&
+           fileManager.fileExists(atPath: serverPem.path) &&
+           fileManager.fileExists(atPath: commonName.path) {
+            print("✅ SSL certificates already exist")
+            return
+        }
+        
+        print("🔄 SSL certificates missing, downloading automatically...")
+        
+        // Download SSL certificates in the background
+        Task.detached {
+            await self._downloadSSLCertificatesAsync()
+        }
+    }
+    
+    /// Asynchronously download SSL certificates
+    private func _downloadSSLCertificatesAsync() async {
+        let serverPackUrl = "https://backloop.dev/pack.json"
+        
+        // Use a continuation to convert the callback-based function to async
+        await withCheckedContinuation { continuation in
+            FR.downloadSSLCertificates(from: serverPackUrl) { success in
+                if success {
+                    print("✅ SSL certificates downloaded successfully during app startup")
+                } else {
+                    print("❌ Failed to download SSL certificates during app startup")
+                    // Still continue - user can manually update later if needed
+                }
+                continuation.resume()
+            }
+        }
+    }
 }

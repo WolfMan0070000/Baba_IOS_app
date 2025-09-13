@@ -1267,7 +1267,8 @@ private struct AutoSwapSectionContent: View {
                 if !appsChunks.isEmpty {
                     TabView(selection: $currentPage) {
                         ForEach(0..<appsChunks.count, id: \.self) { chunkIndex in
-                            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: 3), spacing: 16) {
+                            // Use fixed row heights to keep card alignment identical between pages
+                            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 14), count: 3), spacing: 18) {
                                 ForEach(appsChunks[chunkIndex], id: \.id) { app in
                                     AppGridCard(
                                         app: app,
@@ -1279,16 +1280,17 @@ private struct AutoSwapSectionContent: View {
                                 // Add spacer to fill remaining space if less than 6 apps
                                 if appsChunks[chunkIndex].count < 6 {
                                     ForEach(0..<(6 - appsChunks[chunkIndex].count)) { _ in
-                                        Color.clear.frame(height: 500)
+                                        // Match the card fixed height for exact alignment
+                                        Color.clear.frame(height: 160)
                                     }
                                 }
                             }
-                            .padding(.horizontal, 4)
+                            .padding(.horizontal, 8)
                             .tag(chunkIndex)
                         }
                     }
                     .tabViewStyle(PageTabViewStyle(indexDisplayMode: .automatic))
-                    .frame(height: 300) // Fixed height for 2 rows of grid cards
+                    .frame(height: 410) // More space for compact cards in auto-swap
                     .gesture(
                         DragGesture(minimumDistance: 30)  // Increased from 20 to avoid tap conflicts
                             .onChanged { _ in

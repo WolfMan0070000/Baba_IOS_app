@@ -11,6 +11,7 @@ import Foundation
 import NIOSSL
 import NIOTLS
 import Vapor
+import UIKit
 import SystemConfiguration.CaptiveNetwork
 
 // MARK: - Class extension: TLS/Setup
@@ -26,10 +27,34 @@ extension ServerInstaller {
 		let app = Application(Self.env)
 		app.threadPool = .init(numberOfThreads: 1)
 		
+		// Configure TLS if not using fully local server
 		if getServerMethod() != 1 {
-			if let tls = try tls() {
-				app.http.server.configuration.tlsConfiguration = tls
+			do {
+				if let tls = try tls() {
+					app.http.server.configuration.tlsConfiguration = tls
+					print("✅ TLS configuration applied successfully")
+				} else {
+					print("⚠️ TLS configuration unavailable, falling back to non-TLS mode")
+					// Fallback: Show user-friendly error message later
+					DispatchQueue.main.async {
+						UIAlertController.showAlertWithOk(
+							title: "SSL Setup Issue",
+							message: "SSL certificates could not be configured. You may need to update SSL certificates manually in Settings → Installation → Server & SSL."
+						)
+					}
+				}
+			} catch {
+				print("❌ TLS configuration failed: \(error.localizedDescription)")
+				// Still continue without TLS to allow basic functionality
+				DispatchQueue.main.async {
+					UIAlertController.showAlertWithOk(
+						title: "SSL Configuration Failed",
+						message: "SSL certificates are invalid or corrupted. Please update SSL certificates in Settings → Installation → Server & SSL."
+					)
+				}
 			}
+		} else {
+			print("✅ Using fully local server mode (no TLS needed)")
 		}
 		
 		app.http.server.configuration.hostname = sni()
@@ -56,10 +81,53 @@ extension ServerInstaller {
 	}
 	
 	func tls() throws -> TLSConfiguration? {
+		// First, check if certificates exist
+		if let crt = Self.getUrl("server", ext: "crt"),
+		   let pem = Self.getUrl("server", ext: "pem") {
+			// Certificates exist, try to create TLS configuration
+			return try TLSConfiguration.makeServerConfiguration(
+				certificateChain: NIOSSLCertificate.fromPEMFile(crt.path).map {
+					NIOSSLCertificateSource.certificate($0)
+				},
+				privateKey: .privateKey(
+					try NIOSSLPrivateKey(file: pem.path, format: .pem)
+				)
+			)
+		}
+		
+		// Certificates don't exist, try to download them synchronously
+		print("⚠️ SSL certificates not found, attempting to download...")
+		
+		// Create a synchronous download using a semaphore
+		let semaphore = DispatchSemaphore(value: 0)
+		var downloadSuccess = false
+		
+		FR.downloadSSLCertificates(from: "https://backloop.dev/pack.json") { success in
+			downloadSuccess = success
+			semaphore.signal()
+		}
+		
+		// Wait for download to complete (with timeout)
+		let result = semaphore.wait(timeout: .now() + 30) // 30 second timeout
+		
+		if result == .timedOut {
+			print("❌ SSL certificate download timed out")
+			return nil
+		}
+		
+		if !downloadSuccess {
+			print("❌ SSL certificate download failed")
+			return nil
+		}
+		
+		print("✅ SSL certificates downloaded successfully")
+		
+		// Try again after download
 		guard
 			let crt = Self.getUrl("server", ext: "crt"),
 			let pem = Self.getUrl("server", ext: "pem")
 		else {
+			print("❌ SSL certificates still not available after download")
 			return nil
 		}
 		
@@ -93,6 +161,22 @@ extension ServerInstaller {
 		}
 		
 		return Bundle.main.url(forResource: name, withExtension: ext)
+	}
+	
+	/// Check if SSL certificates are available and valid
+	static func areSSLCertificatesAvailable() -> Bool {
+		return getUrl("server", ext: "crt") != nil &&
+			   getUrl("server", ext: "pem") != nil &&
+			   getUrl("commonName", ext: "txt") != nil
+	}
+	
+	/// Get SSL certificate status for diagnostics
+	static func getSSLCertificateStatus() -> (crt: Bool, pem: Bool, commonName: Bool) {
+		return (
+			crt: getUrl("server", ext: "crt") != nil,
+			pem: getUrl("server", ext: "pem") != nil,
+			commonName: getUrl("commonName", ext: "txt") != nil
+		)
 	}
 	
 	static func getLocalAddress() -> String? {

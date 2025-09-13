@@ -23,7 +23,7 @@ struct AppGridCard: View {
     
     var body: some View {
         Button(action: onTap) {
-            VStack(spacing: 10) {
+            VStack(spacing: 8) {
                 // Icon container with layered background and subtle shadow
                 ZStack {
                     // Soft background halo
@@ -40,13 +40,13 @@ struct AppGridCard: View {
                             )
                         )
                         .blur(radius: 12)
-                        .frame(width: 76, height: 76)
+                        .frame(width: 72, height: 72)
                         .opacity(0.8)
                     
                     // Main icon background
                     RoundedRectangle(cornerRadius: 20, style: .continuous)
                         .fill(Color(UIColor.tertiarySystemGroupedBackground).opacity(0.9))
-                        .frame(width: 76, height: 76)
+                        .frame(width: 72, height: 72)
                         .overlay(
                             RoundedRectangle(cornerRadius: 20, style: .continuous)
                                 .strokeBorder(
@@ -70,13 +70,13 @@ struct AppGridCard: View {
                                     image
                                         .resizable()
                                         .aspectRatio(1, contentMode: .fit)
-                                        .frame(width: 72, height: 72)
+                                        .frame(width: 68, height: 68)
                                         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                                         .accessibility(label: Text("\(app.displayName) app icon"))
                                 } else if state.error != nil {
                                     RoundedRectangle(cornerRadius: 18, style: .continuous)
                                         .fill(Color.red.opacity(0.1))
-                                        .frame(width: 72, height: 72)
+                                        .frame(width: 68, height: 68)
                                         .overlay(
                                             Image(systemName: "exclamationmark.triangle.fill")
                                                 .foregroundColor(.red)
@@ -85,7 +85,7 @@ struct AppGridCard: View {
                                 } else {
                                     RoundedRectangle(cornerRadius: 18, style: .continuous)
                                         .fill(Color.gray.opacity(0.12))
-                                        .frame(width: 72, height: 72)
+                                        .frame(width: 68, height: 68)
                                         .overlay(ProgressView())
                                         .accessibility(label: Text("Loading \(app.displayName) app icon"))
                                 }
@@ -94,7 +94,7 @@ struct AppGridCard: View {
                 }
                 
                 // Title and developer
-                VStack(spacing: 4) {
+                VStack(spacing: 3) {
                     Text(app.displayName)
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(.primary)
@@ -113,6 +113,7 @@ struct AppGridCard: View {
                 statefulGetButton
             }
             .padding(.vertical, 6)
+            .frame(height: 160) // Fixed height for consistent grid layout across pages
             // Removed previous gray background for a cleaner floating look
         }
         .buttonStyle(PlainButtonStyle())

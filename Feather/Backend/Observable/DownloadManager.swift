@@ -102,10 +102,18 @@ class Download: ObservableObject, Identifiable, @unchecked Sendable {
         
         let download = Download(id: id, url: url, onlyArchiving: onlyArchiving)
         download.state = state
-        download.progress = progress
-        download.bytesDownloaded = bytesDownloaded
-        download.totalBytes = totalBytes
-        download.unpackageProgress = unpackageProgress
+        download.progress = max(0.0, min(1.0, progress)) // Clamp progress to valid range
+        
+        // Ensure byte values are reasonable and non-negative
+        download.bytesDownloaded = max(0, bytesDownloaded)
+        download.totalBytes = max(0, totalBytes)
+        
+        // If bytesDownloaded > totalBytes, adjust totalBytes (can happen with bad server headers)
+        if download.bytesDownloaded > download.totalBytes && download.totalBytes > 0 {
+            download.totalBytes = download.bytesDownloaded
+        }
+        
+        download.unpackageProgress = max(0.0, min(1.0, unpackageProgress))
         download.isCompleted = isCompleted
         
         // Handle retry tracking (with backwards compatibility)
@@ -115,6 +123,8 @@ class Download: ObservableObject, Identifiable, @unchecked Sendable {
         if let resumeDataString = dict["resumeData"] as? String, !resumeDataString.isEmpty {
             download.resumeData = Data(base64Encoded: resumeDataString)
         }
+        
+        print("Restored download: \(download.fileName) - Bytes: \(download.bytesDownloaded)/\(download.totalBytes), Progress: \(download.progress)")
         
         return download
     }
@@ -426,7 +436,9 @@ class DownloadManager: NSObject, ObservableObject {
             download.resumeData = nil
             download.progress = 0.0
             download.bytesDownloaded = 0
+            download.totalBytes = 0  // Reset total bytes too for retry
             download.isCompleted = false
+            print("Reset failed download for retry: \(download.fileName)")
         }
         
         // If it's in queue, move it to front
@@ -585,12 +597,19 @@ extension DownloadManager: URLSessionDownloadDelegate {
 					self.saveDownloads()
 				} else {
 					print("Package file handling completed successfully: \(dl.fileName)")
+					print("Final download stats - Bytes: \(dl.bytesDownloaded)/\(dl.totalBytes), Progress: \(dl.progress)")
+					
 					// Mark as completed
 					dl.isCompleted = true
 					dl.state = .completed
 					dl.progress = 1.0
 					dl.unpackageProgress = 1.0
 					dl.errorMessage = nil
+					
+					// Ensure final byte counts are reasonable
+					if dl.totalBytes == 0 && dl.bytesDownloaded > 0 {
+						dl.totalBytes = dl.bytesDownloaded
+					}
 					
 					// Remove completed download from queue to prevent re-downloading
 					if let queueIndex = self.downloadQueue.firstIndex(where: { $0.id == dl.id }) {
@@ -618,11 +637,14 @@ extension DownloadManager: URLSessionDownloadDelegate {
 	
 	private func isCorruptionError(_ error: Error) -> Bool {
 		let errorDescription = error.localizedDescription.lowercased()
-		return errorDescription.contains("zip") && 
-		       (errorDescription.contains("error") || 
-		        errorDescription.contains("corrupt") || 
-		        errorDescription.contains("invalid") ||
-		        errorDescription.contains("failed"))
+		
+		// Be more specific about what constitutes a corruption error
+		// Only retry if it's clearly a corruption issue, not a generic failure
+		return errorDescription.contains("corrupt") ||
+		       errorDescription.contains("invalid zip") ||
+		       errorDescription.contains("bad zip") ||
+		       errorDescription.contains("zip error") ||
+		       (errorDescription.contains("zip") && errorDescription.contains("damaged"))
 	}
 	
 	func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
@@ -666,27 +688,44 @@ extension DownloadManager: URLSessionDownloadDelegate {
         
         DispatchQueue.main.async {
             let previousProgress = download.progress
-            download.progress = totalBytesExpectedToWrite > 0
-			? Double(totalBytesWritten) / Double(totalBytesExpectedToWrite)
-			: 0
-            download.bytesDownloaded = totalBytesWritten
-            download.totalBytes = totalBytesExpectedToWrite
+            
+            // Handle cases where server doesn't provide content-length or provides incorrect values
+            let effectiveTotalBytes: Int64
+            if totalBytesExpectedToWrite <= 0 {
+                // Server didn't provide content-length, use current downloaded bytes as minimum
+                effectiveTotalBytes = max(totalBytesWritten, download.totalBytes)
+                download.progress = 0.0 // Unknown progress
+            } else {
+                effectiveTotalBytes = totalBytesExpectedToWrite
+                download.progress = Double(totalBytesWritten) / Double(totalBytesExpectedToWrite)
+            }
+            
+            // Ensure bytes values are never decreasing (can happen with resume operations)
+            download.bytesDownloaded = max(totalBytesWritten, download.bytesDownloaded)
+            download.totalBytes = max(effectiveTotalBytes, download.totalBytes)
+            
+            // Clamp progress to valid range
+            download.progress = max(0.0, min(1.0, download.progress))
             
             // Enhanced progress saving for large files
             let shouldSaveProgress = 
-                totalBytesWritten % (512 * 1024) == 0 || // Every 512KB
-                download.progress - previousProgress >= 0.01 || // Every 1% progress
-                download.progress >= 0.95 // Save frequently near completion
+                totalBytesWritten > 0 && (
+                    totalBytesWritten % (512 * 1024) == 0 || // Every 512KB
+                    download.progress - previousProgress >= 0.01 || // Every 1% progress
+                    download.progress >= 0.95 // Save frequently near completion
+                )
             
             if shouldSaveProgress {
                 self.saveDownloads()
             }
             
-            // Log progress for large files
-            if totalBytesExpectedToWrite > 50 * 1024 * 1024 { // Files > 50MB
+            // Log progress for large files with better formatting
+            if download.totalBytes > 50 * 1024 * 1024 { // Files > 50MB
                 let progressPercent = Int(download.progress * 100)
                 if progressPercent % 10 == 0 && progressPercent != Int(previousProgress * 100) {
-                    print("Large file download progress: \(download.fileName) - \(progressPercent)% (\(totalBytesWritten / 1024 / 1024)MB / \(totalBytesExpectedToWrite / 1024 / 1024)MB)")
+                    let downloadedMB = download.bytesDownloaded / 1024 / 1024
+                    let totalMB = download.totalBytes / 1024 / 1024
+                    print("Large file download progress: \(download.fileName) - \(progressPercent)% (\(downloadedMB)MB / \(totalMB)MB)")
                 }
             }
         }
