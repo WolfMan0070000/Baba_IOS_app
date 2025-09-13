@@ -13,6 +13,7 @@ struct AppGridCard: View {
     let app: IOSAppDTO
     let onTap: () -> Void
     let onGetTap: (() -> Void)?
+    @ObservedObject private var downloadManager = DownloadManager.shared
     
     init(app: IOSAppDTO, onTap: @escaping () -> Void, onGetTap: (() -> Void)? = nil) {
         self.app = app
@@ -109,20 +110,95 @@ struct AppGridCard: View {
                     }
                 }
                 
-                // GET button
-                Button(action: { onGetTap?() }) {
-                    Text("GET")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundColor(.blue)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Color.blue.opacity(0.1))
-                        .clipShape(Capsule())
-                }
+                statefulGetButton
             }
             .padding(.vertical, 6)
             // Removed previous gray background for a cleaner floating look
         }
         .buttonStyle(PlainButtonStyle())
+    }
+
+    private var currentDownload: Download? {
+        downloadManager.downloads.first { download in
+            download.fileName.contains(app.bundleIdentifier) || download.id.contains(app.bundleIdentifier)
+        }
+    }
+    
+    @ViewBuilder
+    private var statefulGetButton: some View {
+        let download = currentDownload
+        if let download = download {
+            Button(action: downloadAction(for: download)) {
+                if download.isCompleted {
+                    labelCapsule(text: String(localized: "Done"), systemName: "checkmark.circle.fill", fg: .green)
+                } else if let task = download.task {
+                    switch task.state {
+                    case .running:
+                        VStack(spacing: 2) {
+                            ProgressView(value: Double(download.progress))
+                                .progressViewStyle(CircularProgressViewStyle(tint: .blue))
+                                .frame(width: 18, height: 18)
+                            Text("\(Int(download.progress * 100))%")
+                                .font(.system(size: 10, weight: .semibold))
+                                .foregroundColor(.blue)
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Color.blue.opacity(0.1))
+                        .clipShape(Capsule())
+                    case .suspended:
+                        labelCapsule(text: String(localized: "Paused"), systemName: "pause.circle.fill", fg: .orange)
+                    case .canceling:
+                        labelCapsule(text: String(localized: "Cancelling"), systemName: "xmark.circle.fill", fg: .red)
+                    case .completed:
+                        labelCapsule(text: String(localized: "Done"), systemName: "checkmark.circle.fill", fg: .green)
+                    @unknown default:
+                        labelCapsule(text: String(localized: "Queued"), systemName: "clock.fill", fg: .blue)
+                    }
+                } else {
+                    labelCapsule(text: String(localized: "Queued"), systemName: "clock.fill", fg: .blue)
+                }
+            }
+        } else {
+            Button(action: { onGetTap?() }) {
+                Text("GET")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(.blue)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.blue.opacity(0.1))
+                    .clipShape(Capsule())
+            }
+        }
+    }
+    
+    private func labelCapsule(text: String, systemName: String, fg: Color) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: systemName)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(fg)
+            Text(text)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundColor(fg)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(fg.opacity(0.12))
+        .clipShape(Capsule())
+    }
+
+    private func downloadAction(for download: Download) -> () -> Void {
+        return {
+            #if os(iOS)
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            #endif
+            if download.isCompleted {
+                NotificationCenter.default.post(name: NSNotification.Name("SwitchToLibraryTab"), object: nil)
+            } else if download.state == .downloading || download.task?.state == .running {
+                DownloadManager.shared.pauseDownload(download)
+            } else {
+                DownloadManager.shared.resumeDownload(download)
+            }
+        }
     }
 }

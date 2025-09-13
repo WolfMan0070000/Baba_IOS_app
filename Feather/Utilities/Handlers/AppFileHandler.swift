@@ -57,30 +57,147 @@ final class AppFileHandler: NSObject, @unchecked Sendable {
 		
 		let download = self._download
 		
+		// Validate file integrity before extraction
+		try await validateFileIntegrity()
+		
+		// Ensure sufficient disk space
+		try await ensureSufficientDiskSpace()
+		
+		// Attempt extraction with retry mechanism
 		try await withCheckedThrowingContinuation { continuation in
-			DispatchQueue.global(qos: .utility).async {
-				do {
-					try Zip.unzipFile(
-						self._ipa,
-						destination: self._uniqueWorkDir,
-						overwrite: true,
-						password: nil,
-						progress: { progress in
-							if let download = download {
-								DispatchQueue.main.async {
-									download.unpackageProgress = progress
-								}
-							}
-						}
-					)
-					
-					self.uniqueWorkDirPayload = self._uniqueWorkDir.appendingPathComponent("Payload")
-					continuation.resume()
-				} catch {
-					continuation.resume(throwing: error)
+			DispatchQueue.global(qos: .userInitiated).async {
+				self.performExtractionWithRetry(download: download) { result in
+					switch result {
+					case .success:
+						self.uniqueWorkDirPayload = self._uniqueWorkDir.appendingPathComponent("Payload")
+						continuation.resume()
+					case .failure(let error):
+						continuation.resume(throwing: error)
+					}
 				}
 			}
 		}
+	}
+	
+	private func validateFileIntegrity() async throws {
+		let fileManager = FileManager.default
+		
+		// Check if file exists and is readable
+		guard fileManager.fileExists(atPath: _ipa.path) && fileManager.isReadableFile(atPath: _ipa.path) else {
+			throw ImportedFileHandlerError.corruptedFile
+		}
+		
+		// Check minimum file size (empty or tiny files are likely corrupted)
+		let attributes = try fileManager.attributesOfItem(atPath: _ipa.path)
+		let fileSize = attributes[.size] as? Int64 ?? 0
+		
+		if fileSize < 1024 { // Less than 1KB is definitely corrupted
+			throw ImportedFileHandlerError.corruptedFile
+		}
+		
+		// Validate ZIP header for IPA/TIPA files
+		if _ipa.pathExtension.lowercased() == "ipa" || _ipa.pathExtension.lowercased() == "tipa" {
+			try validateZipHeader()
+		}
+		
+		Logger.misc.info("[\(self._uuid)] File integrity validation passed for: \(self._ipa.lastPathComponent) (\(fileSize) bytes)")
+	}
+	
+	private func validateZipHeader() throws {
+		let fileHandle = try FileHandle(forReadingFrom: _ipa)
+		defer { fileHandle.closeFile() }
+		
+		let headerData = fileHandle.readData(ofLength: 4)
+		fileHandle.closeFile()
+		
+		// ZIP files should start with "PK" (0x504B)
+		if headerData.count < 4 {
+			throw ImportedFileHandlerError.corruptedFile
+		}
+		
+		let zipHeader = Data([0x50, 0x4B]) // "PK" signature
+		if !headerData.starts(with: zipHeader) {
+			throw ImportedFileHandlerError.corruptedFile
+		}
+	}
+	
+	private func ensureSufficientDiskSpace() async throws {
+		let fileManager = FileManager.default
+		
+		// Get file size
+		let attributes = try fileManager.attributesOfItem(atPath: _ipa.path)
+		let fileSize = attributes[.size] as? Int64 ?? 0
+		
+		// Get available disk space
+		let tempDir = fileManager.temporaryDirectory
+		let resourceValues = try tempDir.resourceValues(forKeys: [.volumeAvailableCapacityKey])
+		let availableSpace = resourceValues.volumeAvailableCapacity ?? 0
+		
+		// Require at least 3x file size for extraction (original + extracted + working space)
+		let requiredSpace = fileSize * 3
+		
+		if Int64(availableSpace) < requiredSpace {
+			Logger.misc.error("[\(self._uuid)] Insufficient disk space. Required: \(requiredSpace), Available: \(availableSpace)")
+			throw ImportedFileHandlerError.insufficientDiskSpace
+		}
+		
+		Logger.misc.info("[\(self._uuid)] Disk space check passed. Available: \(availableSpace), Required: \(requiredSpace)")
+	}
+	
+	private func performExtractionWithRetry(download: Download?, completion: @escaping (Result<Void, Error>) -> Void) {
+		let maxRetries = 3
+		var attemptCount = 0
+		
+		func attemptExtraction() {
+			attemptCount += 1
+			
+			do {
+				// Clear any previous extraction attempts
+				if attemptCount > 1 {
+					try? self._fileManager.removeItem(at: self._uniqueWorkDir.appendingPathComponent("Payload"))
+					Logger.misc.info("[\(self._uuid)] Retry attempt \(attemptCount) for extraction")
+				}
+				
+				try Zip.unzipFile(
+					self._ipa,
+					destination: self._uniqueWorkDir,
+					overwrite: true,
+					password: nil,
+					progress: { progress in
+						if let download = download {
+							DispatchQueue.main.async {
+								download.unpackageProgress = progress
+							}
+						}
+					}
+				)
+				
+				// Validate extraction was successful
+				let payloadPath = self._uniqueWorkDir.appendingPathComponent("Payload")
+				if self._fileManager.fileExists(atPath: payloadPath.path) {
+					Logger.misc.info("[\(self._uuid)] Extraction successful on attempt \(attemptCount)")
+					completion(.success(()))
+				} else {
+					throw ImportedFileHandlerError.extractionFailed
+				}
+				
+			} catch {
+				Logger.misc.error("[\(self._uuid)] Extraction failed on attempt \(attemptCount): \(error.localizedDescription)")
+				
+				if attemptCount < maxRetries {
+					// Wait before retry with exponential backoff
+					let delay = pow(2.0, Double(attemptCount - 1))
+					DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + delay) {
+						attemptExtraction()
+					}
+				} else {
+					// All retries exhausted
+					completion(.failure(ImportedFileHandlerError.extractionFailed))
+				}
+			}
+		}
+		
+		attemptExtraction()
 	}
 	
 	func move() async throws {
@@ -126,10 +243,55 @@ final class AppFileHandler: NSObject, @unchecked Sendable {
 	}
 	
 	func clean() async throws {
+		// Clean up temporary files and directories
 		try _fileManager.removeFileIfNeeded(at: _uniqueWorkDir)
+		
+		// Additional cleanup for large file handling
+		cleanupTempFilesInBackground()
+	}
+	
+	private func cleanupTempFilesInBackground() {
+		Task.detached(priority: .background) {
+			let tempDir = FileManager.default.temporaryDirectory
+			let featherTempDirs = ["FeatherImport_", "FeatherDownloads", "FeatherInstall_"]
+			
+			do {
+				let contents = try FileManager.default.contentsOfDirectory(at: tempDir, includingPropertiesForKeys: [.creationDateKey], options: .skipsHiddenFiles)
+				
+				for url in contents {
+					let name = url.lastPathComponent
+					if featherTempDirs.contains(where: { name.hasPrefix($0) }) {
+						// Check if directory is older than 1 hour
+						if let creationDate = try? url.resourceValues(forKeys: [.creationDateKey]).creationDate,
+						   Date().timeIntervalSince(creationDate) > 3600 {
+							try? FileManager.default.removeItem(at: url)
+							print("Cleaned up old temp directory: \(name)")
+						}
+					}
+				}
+			} catch {
+				print("Error during temp cleanup: \(error.localizedDescription)")
+			}
+		}
 	}
 }
 
-private enum ImportedFileHandlerError: Error {
+private enum ImportedFileHandlerError: Error, LocalizedError {
 	case payloadNotFound
+	case corruptedFile
+	case insufficientDiskSpace
+	case extractionFailed
+	
+	var errorDescription: String? {
+		switch self {
+		case .payloadNotFound:
+			return "Payload directory not found after extraction"
+		case .corruptedFile:
+			return "Downloaded file appears to be corrupted"
+		case .insufficientDiskSpace:
+			return "Insufficient disk space for extraction"
+		case .extractionFailed:
+			return "Failed to extract archive after multiple attempts"
+		}
+	}
 }

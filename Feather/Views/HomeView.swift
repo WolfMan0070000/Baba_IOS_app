@@ -233,7 +233,8 @@ struct HomeView: View {
     private var mainContentView: some View {
         ScrollView {
             VStack(spacing: 28) {
-                // Removed Discover header per request
+                // Top title header (centered) similar to the screenshot
+                titleHeaderView
                 // Process only the configured sections from admin panel
                 let enabledSections = sections.filter { $0.enabled }
                 let sortedSections = enabledSections.sorted { $0.order < $1.order }
@@ -279,6 +280,20 @@ struct HomeView: View {
         .refreshable {
             await loadContent(force: true, reason: "pull_to_refresh")
         }
+    }
+
+    // MARK: - Title Header
+    private var titleHeaderView: some View {
+        HStack {
+            Spacer()
+            Text(String(localized: "Home"))
+                .font(.title.bold())
+                .foregroundColor(.primary)
+                .accessibilityLabel(String(localized: "Home"))
+            Spacer()
+        }
+        .padding(.top, 8)
+        .padding(.bottom, 6)
     }
     
     private var emptyStateView: some View {
@@ -535,6 +550,10 @@ struct HomeView: View {
     
     // MARK: - Downloads
     private func startDownload(app: IOSAppDTO) {
+        // Haptic feedback on starting download
+        #if os(iOS)
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        #endif
         if let ipaUrl = app.ipaUrl, let url = URL(string: ipaUrl) {
             let downloadId = "BabaApp_\(app.bundleIdentifier)_\(app.id)"
             _ = DownloadManager.shared.startDownload(from: url, id: downloadId)
@@ -1260,7 +1279,7 @@ private struct AutoSwapSectionContent: View {
                                 // Add spacer to fill remaining space if less than 6 apps
                                 if appsChunks[chunkIndex].count < 6 {
                                     ForEach(0..<(6 - appsChunks[chunkIndex].count)) { _ in
-                                        Color.clear.frame(height: 350)
+                                        Color.clear.frame(height: 500)
                                     }
                                 }
                             }

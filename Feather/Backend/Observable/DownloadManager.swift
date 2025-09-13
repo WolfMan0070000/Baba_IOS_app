@@ -36,12 +36,18 @@ class Download: ObservableObject, Identifiable, @unchecked Sendable {
     var task: URLSessionDownloadTask?
     var resumeData: Data?
     var backgroundTaskID: UIBackgroundTaskIdentifier = .invalid
+    var retryCount: Int = 0
+    var maxRetries: Int = 3
 	
 	let id: String
 	let url: URL
 	let fileName: String
 	let onlyArchiving: Bool
     let createdAt: Date
+    
+    var canRetry: Bool {
+        return retryCount < maxRetries
+    }
     
     init(
 		id: String,
@@ -69,7 +75,9 @@ class Download: ObservableObject, Identifiable, @unchecked Sendable {
             "unpackageProgress": unpackageProgress,
             "isCompleted": isCompleted,
             "createdAt": createdAt.timeIntervalSince1970,
-            "resumeData": resumeData?.base64EncodedString() ?? ""
+            "resumeData": resumeData?.base64EncodedString() ?? "",
+            "retryCount": retryCount,
+            "maxRetries": maxRetries
         ]
     }
     
@@ -99,6 +107,10 @@ class Download: ObservableObject, Identifiable, @unchecked Sendable {
         download.totalBytes = totalBytes
         download.unpackageProgress = unpackageProgress
         download.isCompleted = isCompleted
+        
+        // Handle retry tracking (with backwards compatibility)
+        download.retryCount = dict["retryCount"] as? Int ?? 0
+        download.maxRetries = dict["maxRetries"] as? Int ?? 3
         
         if let resumeDataString = dict["resumeData"] as? String, !resumeDataString.isEmpty {
             download.resumeData = Data(base64Encoded: resumeDataString)
@@ -150,18 +162,32 @@ class DownloadManager: NSObject, ObservableObject {
         setupBackgroundSession()
         loadPersistedDownloads()
         setupAppStateObservers()
+        // Removed automatic periodic cleanup to prevent UI freezing
     }
     
     private func setupBackgroundSession() {
         let configuration = URLSessionConfiguration.background(withIdentifier: "Feather.DownloadManager.BackgroundSession")
         configuration.sessionSendsLaunchEvents = true
         configuration.shouldUseExtendedBackgroundIdleMode = true
-        configuration.timeoutIntervalForRequest = 60
-        configuration.timeoutIntervalForResource = 3600 // 1 hour for large files
+        
+        // Enhanced timeouts for large files
+        configuration.timeoutIntervalForRequest = 120 // 2 minutes for initial response
+        configuration.timeoutIntervalForResource = 7200 // 2 hours for very large files
+        
+        // Network reliability settings
         configuration.waitsForConnectivity = true
         configuration.allowsCellularAccess = true
         configuration.allowsExpensiveNetworkAccess = true
         configuration.allowsConstrainedNetworkAccess = true
+        
+        // Optimize for large files
+        configuration.httpMaximumConnectionsPerHost = 2
+        configuration.networkServiceType = .background
+        configuration.isDiscretionary = false // Don't wait for optimal conditions
+        
+        // Memory and caching optimizations
+        configuration.urlCache = nil // Disable caching for downloads
+        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
         
         _session = URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
     }
@@ -209,6 +235,13 @@ class DownloadManager: NSObject, ObservableObject {
             endDownloadBackgroundTask(download)
         }
         
+        // Clean up any completed downloads from the queue to prevent re-downloading
+        let completedInQueue = downloadQueue.filter { $0.isCompleted }
+        if !completedInQueue.isEmpty {
+            downloadQueue.removeAll { $0.isCompleted }
+            print("Removed \(completedInQueue.count) completed downloads from queue on foreground return")
+        }
+        
         // Resume any downloads that were interrupted
         resumeInterruptedDownloads()
     }
@@ -228,7 +261,10 @@ class DownloadManager: NSObject, ObservableObject {
     }
     
     private func resumeInterruptedDownloads() {
-        for download in internalDownloads where download.state == .downloading && download.task?.state != .running {
+        for download in internalDownloads where 
+            !download.isCompleted && 
+            download.state == .downloading && 
+            download.task?.state != .running {
             print("Resuming interrupted download: \(download.fileName)")
             resumeDownload(download)
         }
@@ -247,21 +283,22 @@ class DownloadManager: NSObject, ObservableObject {
         
         for downloadDict in downloadsData {
             if let download = Download.fromDictionary(downloadDict) {
-                // Only restore non-completed downloads
-                if !download.isCompleted {
-                    // Additional safety: Check if we already have a completed download for this URL
-                    let hasCompletedVersion = internalDownloads.contains { existingDownload in
-                        existingDownload.url == download.url && existingDownload.isCompleted
+                // Check if we already have a download for this URL
+                let existingDownload = internalDownloads.first { existingDownload in
+                    existingDownload.url == download.url
+                }
+                
+                if existingDownload == nil {
+                    internalDownloads.append(download)
+                    
+                    // Only add non-completed downloads to the queue
+                    if !download.isCompleted && download.state == .waiting {
+                        downloadQueue.append(download)
                     }
                     
-                    if !hasCompletedVersion {
-                        internalDownloads.append(download)
-                        if download.state == .waiting {
-                            downloadQueue.append(download)
-                        }
-                    } else {
-                        print("Skipping persisted download - already have completed version: \(download.fileName)")
-                    }
+                    print("Restored download: \(download.fileName) - State: \(download.state), Completed: \(download.isCompleted)")
+                } else {
+                    print("Skipping duplicate download: \(download.fileName)")
                 }
             }
         }
@@ -302,6 +339,9 @@ class DownloadManager: NSObject, ObservableObject {
     }
     
     private func processQueue() {
+        // Clean up any completed downloads that might have slipped into the queue
+        downloadQueue.removeAll { $0.isCompleted }
+        
         // Count truly active downloads (running state)
         let activeDownloads = internalDownloads.filter { 
             $0.task?.state == .running || $0.state == .downloading
@@ -311,6 +351,14 @@ class DownloadManager: NSObject, ObservableObject {
         
         // Start only one download if we are under the limit
         if activeDownloads.count < maxConcurrentDownloads, let nextDownload = downloadQueue.first {
+            // Double-check that the download isn't completed
+            if nextDownload.isCompleted {
+                _ = downloadQueue.removeFirst()
+                print("Removed completed download from queue during processing: \(nextDownload.fileName)")
+                processQueue() // Try again with next item
+                return
+            }
+            
             // Prevent duplicates: only start if it has no running task
             if nextDownload.task == nil || nextDownload.task?.state != .running {
                 _ = downloadQueue.removeFirst()
@@ -495,6 +543,7 @@ extension DownloadManager: URLSessionDownloadDelegate {
 	func handlePachageFile(url: URL, dl: Download) throws {
 		print("Handling package file: \(url.lastPathComponent) for download: \(dl.fileName)")
 		
+		// Process file directly without heavy validation to prevent UI freezing
 		FR.handlePackageFile(url, download: dl) { err in
 			DispatchQueue.main.async {
 				if let err = err {
@@ -502,22 +551,37 @@ extension DownloadManager: URLSessionDownloadDelegate {
 					let generator = UINotificationFeedbackGenerator()
 					generator.notificationOccurred(.error)
 					
-					// Mark as failed instead of removing
-					dl.state = .failed
-					dl.errorMessage = err.localizedDescription
-					dl.isCompleted = false
+					// Check if error is related to corruption and attempt re-download
+					if self.isCorruptionError(err) && dl.canRetry {
+						print("Detected corruption error for download, attempting retry (\(dl.retryCount + 1)/\(dl.maxRetries))")
+						dl.retryCount += 1
+						dl.state = .waiting
+						dl.errorMessage = "File corruption detected, retrying download... (\(dl.retryCount)/\(dl.maxRetries))"
+						dl.progress = 0.0
+						dl.bytesDownloaded = 0
+						dl.unpackageProgress = 0.0
+						dl.resumeData = nil
+						
+						// Add back to queue for retry
+						if !self.downloadQueue.contains(where: { $0.id == dl.id }) {
+							self.downloadQueue.append(dl)
+						}
+						self.processQueue()
+					} else {
+						// Mark as failed
+						dl.state = .failed
+						dl.errorMessage = err.localizedDescription
+						dl.isCompleted = false
+						
+						// Remove from queue if present
+						if let queueIndex = self.downloadQueue.firstIndex(where: { $0.id == dl.id }) {
+							self.downloadQueue.remove(at: queueIndex)
+						}
+						self.processQueue()
+					}
 					
 					// End background task
 					self.endDownloadBackgroundTask(dl)
-					
-					// Remove from queue if present
-					if let queueIndex = self.downloadQueue.firstIndex(where: { $0.id == dl.id }) {
-						self.downloadQueue.remove(at: queueIndex)
-					}
-					
-					// Process queue for next download
-					self.processQueue()
-					
 					self.saveDownloads()
 				} else {
 					print("Package file handling completed successfully: \(dl.fileName)")
@@ -527,6 +591,12 @@ extension DownloadManager: URLSessionDownloadDelegate {
 					dl.progress = 1.0
 					dl.unpackageProgress = 1.0
 					dl.errorMessage = nil
+					
+					// Remove completed download from queue to prevent re-downloading
+					if let queueIndex = self.downloadQueue.firstIndex(where: { $0.id == dl.id }) {
+						self.downloadQueue.remove(at: queueIndex)
+						print("Removed completed download from queue: \(dl.fileName)")
+					}
 					
 					// End background task
 					self.endDownloadBackgroundTask(dl)
@@ -544,6 +614,15 @@ extension DownloadManager: URLSessionDownloadDelegate {
 				}
 			}
 		}
+	}
+	
+	private func isCorruptionError(_ error: Error) -> Bool {
+		let errorDescription = error.localizedDescription.lowercased()
+		return errorDescription.contains("zip") && 
+		       (errorDescription.contains("error") || 
+		        errorDescription.contains("corrupt") || 
+		        errorDescription.contains("invalid") ||
+		        errorDescription.contains("failed"))
 	}
 	
 	func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
@@ -586,15 +665,29 @@ extension DownloadManager: URLSessionDownloadDelegate {
         guard let download = getDownloadTask(by: downloadTask) else { return }
         
         DispatchQueue.main.async {
+            let previousProgress = download.progress
             download.progress = totalBytesExpectedToWrite > 0
 			? Double(totalBytesWritten) / Double(totalBytesExpectedToWrite)
 			: 0
             download.bytesDownloaded = totalBytesWritten
             download.totalBytes = totalBytesExpectedToWrite
             
-            // Save progress periodically for large files
-            if totalBytesWritten % (1024 * 1024) == 0 { // Every MB
+            // Enhanced progress saving for large files
+            let shouldSaveProgress = 
+                totalBytesWritten % (512 * 1024) == 0 || // Every 512KB
+                download.progress - previousProgress >= 0.01 || // Every 1% progress
+                download.progress >= 0.95 // Save frequently near completion
+            
+            if shouldSaveProgress {
                 self.saveDownloads()
+            }
+            
+            // Log progress for large files
+            if totalBytesExpectedToWrite > 50 * 1024 * 1024 { // Files > 50MB
+                let progressPercent = Int(download.progress * 100)
+                if progressPercent % 10 == 0 && progressPercent != Int(previousProgress * 100) {
+                    print("Large file download progress: \(download.fileName) - \(progressPercent)% (\(totalBytesWritten / 1024 / 1024)MB / \(totalBytesExpectedToWrite / 1024 / 1024)MB)")
+                }
             }
         }
     }
@@ -678,3 +771,4 @@ extension DownloadManager: URLSessionDownloadDelegate {
         }
     }
 }
+

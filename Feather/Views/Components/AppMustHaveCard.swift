@@ -13,6 +13,7 @@ struct AppMustHaveCard: View {
     let app: IOSAppDTO
     let onTap: () -> Void
     let onGetTap: (() -> Void)?
+    @ObservedObject private var downloadManager = DownloadManager.shared
     
     init(app: IOSAppDTO, onTap: @escaping () -> Void, onGetTap: (() -> Void)? = nil) {
         self.app = app
@@ -95,20 +96,79 @@ struct AppMustHaveCard: View {
                 
                 Spacer()
                 
-                // GET button
-                Button(action: { onGetTap?() }) {
-                    Text("GET")
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundColor(.blue)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 6)
-                        .background(Color.blue.opacity(0.1))
-                        .clipShape(Capsule())
-                }
+                // GET / state button
+                statefulGetButton
             }
             .padding(.vertical, 10)
             .padding(.horizontal, 12)
         }
         .buttonStyle(PlainButtonStyle())
+    }
+
+    private var currentDownload: Download? {
+        downloadManager.downloads.first { download in
+            download.fileName.contains(app.bundleIdentifier) || download.id.contains(app.bundleIdentifier)
+        }
+    }
+    
+    @ViewBuilder
+    private var statefulGetButton: some View {
+        let download = currentDownload
+        if let download = download {
+            if download.isCompleted {
+                labelCapsule(text: String(localized: "Done"), systemName: "checkmark.circle.fill", fg: .green)
+            } else if let task = download.task {
+                switch task.state {
+                case .running:
+                    HStack(spacing: 6) {
+                        ProgressView(value: Double(download.progress))
+                            .progressViewStyle(CircularProgressViewStyle(tint: .blue))
+                            .frame(width: 16, height: 16)
+                        Text("\(Int(download.progress * 100))%")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.blue)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.blue.opacity(0.1))
+                    .clipShape(Capsule())
+                case .suspended:
+                    labelCapsule(text: String(localized: "Paused"), systemName: "pause.circle.fill", fg: .orange)
+                case .canceling:
+                    labelCapsule(text: String(localized: "Cancelling"), systemName: "xmark.circle.fill", fg: .red)
+                case .completed:
+                    labelCapsule(text: String(localized: "Done"), systemName: "checkmark.circle.fill", fg: .green)
+                @unknown default:
+                    labelCapsule(text: String(localized: "Queued"), systemName: "clock.fill", fg: .blue)
+                }
+            } else {
+                labelCapsule(text: String(localized: "Queued"), systemName: "clock.fill", fg: .blue)
+            }
+        } else {
+            Button(action: { onGetTap?() }) {
+                Text("GET")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(.blue)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 6)
+                    .background(Color.blue.opacity(0.1))
+                    .clipShape(Capsule())
+            }
+        }
+    }
+    
+    private func labelCapsule(text: String, systemName: String, fg: Color) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: systemName)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(fg)
+            Text(text)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(fg)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(fg.opacity(0.12))
+        .clipShape(Capsule())
     }
 }
