@@ -1163,10 +1163,7 @@ private struct AutoSwapSectionContent: View {
                                 ForEach(0..<appsChunks[chunkIndex].count, id: \.self) { appIndex in
                                     let app = appsChunks[chunkIndex][appIndex]
                                     AppMustHaveCard(app: app) {
-                                        // Only trigger tap if not dragging
-                                        if !isUserInteracting {
-                                            onAppTap(app)
-                                        }
+                                        onAppTap(app)
                                     }
                                     
                                     // Divider line between apps (except for last item in chunk)
@@ -1177,7 +1174,7 @@ private struct AutoSwapSectionContent: View {
                                 }
                                 
                                 // Add spacer to fill remaining space if less than 3 apps
-                                if appsChunks[chunkIndex].count < 3 {
+                                if appsChunks[chunkIndex].count < 4 {
                                     Spacer()
                                 }
                             }
@@ -1186,13 +1183,9 @@ private struct AutoSwapSectionContent: View {
                         }
                     }
                     .tabViewStyle(PageTabViewStyle(indexDisplayMode: .automatic))
-                    .frame(height: 270) // Fixed height for 3 apps
-                    .onTapGesture {
-                        // Reset auto-scroll timer on any tap
-                        resetAutoScrollTimer()
-                    }
+                    .frame(height: 340) // Fixed height for 3 apps
                     .gesture(
-                        DragGesture(minimumDistance: 20)
+                        DragGesture(minimumDistance: 30)  // Increased from 20 to avoid tap conflicts
                             .onChanged { _ in
                                 pauseAutoScroll()
                             }
@@ -1232,10 +1225,7 @@ private struct AutoSwapSectionContent: View {
                             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: 3), spacing: 16) {
                                 ForEach(appsChunks[chunkIndex], id: \.id) { app in
                                     AppGridCard(app: app) {
-                                        // Only trigger tap if not dragging
-                                        if !isUserInteracting {
-                                            onAppTap(app)
-                                        }
+                                        onAppTap(app)
                                     }
                                 }
                                 
@@ -1246,18 +1236,14 @@ private struct AutoSwapSectionContent: View {
                                     }
                                 }
                             }
-                            .padding(.horizontal, 20)
+                            .padding(.horizontal, 4)
                             .tag(chunkIndex)
                         }
                     }
                     .tabViewStyle(PageTabViewStyle(indexDisplayMode: .automatic))
-                    .frame(height: 250) // Fixed height for 2 rows of grid cards
-                    .onTapGesture {
-                        // Reset auto-scroll timer on any tap
-                        resetAutoScrollTimer()
-                    }
+                    .frame(height: 300) // Fixed height for 2 rows of grid cards
                     .gesture(
-                        DragGesture(minimumDistance: 20)
+                        DragGesture(minimumDistance: 30)  // Increased from 20 to avoid tap conflicts
                             .onChanged { _ in
                                 pauseAutoScroll()
                             }
@@ -1278,10 +1264,7 @@ private struct AutoSwapSectionContent: View {
                             HStack(spacing: 16) {
                                 ForEach(Array(appsChunks[chunkIndex].enumerated()), id: \.element.id) { _, app in
                                     AppBannerCard(app: app) {
-                                        // Only trigger tap if not dragging
-                                        if !isUserInteracting {
-                                            onAppTap(app)
-                                        }
+                                        onAppTap(app)
                                     }
                                 }
                                 
@@ -1296,14 +1279,10 @@ private struct AutoSwapSectionContent: View {
                             .tag(chunkIndex)
                         }
                     }
-                    .tabViewStyle(PageTabViewStyle(indexDisplayMode: .automatic))
+                    .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
                     .frame(height: 140) // Fixed height for banner cards
-                    .onTapGesture {
-                        // Reset auto-scroll timer on any tap
-                        resetAutoScrollTimer()
-                    }
                     .gesture(
-                        DragGesture(minimumDistance: 20)
+                        DragGesture(minimumDistance: 30)  // Increased from 20 to avoid tap conflicts
                             .onChanged { _ in
                                 pauseAutoScroll()
                             }
@@ -1316,13 +1295,13 @@ private struct AutoSwapSectionContent: View {
             case "hero":
                 // Hero layout with auto-swap functionality
                 // Using the same TabView approach as StaticSectionContent but with pagination
-                let appsChunks = Array(apps).chunkedInto(2) // 2 hero cards per page
+                let appsChunks = Array(apps).chunkedInto(1) // 2 hero cards per page
                 
                 // Calculate height separately to avoid type checker complexity
                 let heroHeight: CGFloat = {
                     guard !appsChunks.isEmpty, !appsChunks[0].isEmpty else { return 200 }
                     let cardsPerPage = appsChunks[0].count
-                    let cardHeight = 160
+                    let cardHeight = 350
                     let spacing = 16
                     let padding = 40
                     return CGFloat(cardsPerPage * cardHeight + (cardsPerPage - 1) * spacing + padding)
@@ -1334,10 +1313,7 @@ private struct AutoSwapSectionContent: View {
                             VStack(spacing: 16) {
                                 ForEach(Array(appsChunks[chunkIndex].enumerated()), id: \.element.id) { _, app in
                                     AppHeroCard(app: app) {
-                                        // Only trigger tap if not dragging
-                                        if !isUserInteracting {
-                                            onAppTap(app)
-                                        }
+                                        onAppTap(app)
                                     }
                                 }
                                 
@@ -1346,7 +1322,7 @@ private struct AutoSwapSectionContent: View {
                                     Spacer()
                                 }
                             }
-                            .padding(.horizontal, 20)
+                            .padding(.horizontal, 4) // Reduced horizontal padding to give more space to hero cards
                             .tag(chunkIndex)
                         }
                     }
@@ -1371,12 +1347,8 @@ private struct AutoSwapSectionContent: View {
                         },
                         alignment: .trailing
                     )
-                    .onTapGesture {
-                        // Reset auto-scroll timer on any tap
-                        resetAutoScrollTimer()
-                    }
                     .gesture(
-                        DragGesture(minimumDistance: 20)
+                        DragGesture(minimumDistance: 30)  // Increased from 20 to avoid tap conflicts
                             .onChanged { _ in
                                 pauseAutoScroll()
                             }
@@ -1397,10 +1369,7 @@ private struct AutoSwapSectionContent: View {
                             HStack(spacing: 16) {
                                 ForEach(Array(appsChunks[chunkIndex].enumerated()), id: \.element.id) { _, app in
                                     AppListCard(app: app) {
-                                        // Only trigger tap if not dragging
-                                        if !isUserInteracting {
-                                            onAppTap(app)
-                                        }
+                                        onAppTap(app)
                                     }
                                 }
                                 
@@ -1415,14 +1384,10 @@ private struct AutoSwapSectionContent: View {
                             .tag(chunkIndex)
                         }
                     }
-                    .tabViewStyle(PageTabViewStyle(indexDisplayMode: .automatic))
+                    .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
                     .frame(height: 100) // Fixed height for list cards
-                    .onTapGesture {
-                        // Reset auto-scroll timer on any tap
-                        resetAutoScrollTimer()
-                    }
                     .gesture(
-                        DragGesture(minimumDistance: 20)
+                        DragGesture(minimumDistance: 30)  // Increased from 20 to avoid tap conflicts
                             .onChanged { _ in
                                 pauseAutoScroll()
                             }
@@ -1433,27 +1398,7 @@ private struct AutoSwapSectionContent: View {
                 }
             }
             
-            // Page indicator for auto-swap sections with multiple pages (only for TabView-based sections)
-            if appPages.count > 1 {
-                HStack(spacing: 6) {
-                    ForEach(0..<appPages.count, id: \.self) { index in
-                        Button(action: {
-                            withAnimation(.easeOut(duration: 0.3)) {
-                                currentPage = index
-                                // Reset auto-scroll timer when user interacts with page indicator
-                                resetAutoScrollTimer()
-                            }
-                        }) {
-                            Circle()
-                                .fill(index == currentPage ? Color.primary : Color.secondary.opacity(0.3))
-                                .frame(width: index == currentPage ? 8 : 6, height: index == currentPage ? 8 : 6)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    }
-                }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 8)
-            }
+            // Page indicator removed - moved to app cards
         }
         .onAppear {
             startAutoSwap()
@@ -1540,7 +1485,7 @@ private struct StaticSectionContent: View {
                     }
                 }
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 10)
             
         case "banner":
             // Banner layout (large cards)
@@ -1557,13 +1502,13 @@ private struct StaticSectionContent: View {
             
         case "hero":
             // Hero layout - TabView with smooth paging like must-have cards
-            let heroAppsChunks = Array(apps).chunkedInto(2) // Split hero apps into groups of 2 for better display
+            let heroAppsChunks = Array(apps).chunkedInto(1) // Split hero apps into groups of 2 for better display
             
             // Calculate height separately to avoid type checker complexity
             let heroHeight: CGFloat = {
                 guard !heroAppsChunks.isEmpty, !heroAppsChunks[0].isEmpty else { return 200 }
                 let cardsPerPage = heroAppsChunks[0].count
-                let cardHeight = 160
+                let cardHeight = 350 // Reduced from 400 to make card more compact
                 let spacing = 16
                 let padding = 40
                 return CGFloat(cardsPerPage * cardHeight + (cardsPerPage - 1) * spacing + padding)
@@ -1585,7 +1530,7 @@ private struct StaticSectionContent: View {
                                 Spacer()
                             }
                         }
-                        .padding(.horizontal, 20)
+                        .padding(.horizontal, 4) // Reduced horizontal padding to give more space to hero cards
                     }
                 }
                 .tabViewStyle(PageTabViewStyle(indexDisplayMode: .automatic))
@@ -1637,11 +1582,11 @@ private struct StaticSectionContent: View {
                                 Spacer()
                             }
                         }
-                        .padding(.top, 10)
+                        .padding(.top, 15)
                     }
                 }
                 .tabViewStyle(PageTabViewStyle(indexDisplayMode: .automatic))
-                .frame(height: 270) // Fixed height for 3 apps
+                .frame(height: 370) // Fixed height for 3 apps
                 .overlay(
                     // Peek preview overlay - show next page preview on the right edge
                     HStack {

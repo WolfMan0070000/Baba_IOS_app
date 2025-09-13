@@ -45,7 +45,7 @@ struct AppDetailView: View {
 
                 ScrollView {
                     VStack(alignment: .leading, spacing: 32) {
-                        Spacer(minLength: 20)
+                        Spacer(minLength: 10) // Reduced from 20 to bring cards up
 
                         // Enhanced Header Section with Apple-style design
                         headerSection
@@ -192,114 +192,36 @@ struct AppDetailView: View {
 
     // MARK: - Hero Banner Section
     private var heroBannerSection: some View {
-        ZStack {
-            if let bannerUrl = app.bannerUrl, let url = URL(string: bannerUrl) {
-                LazyImage(url: url) { state in
-                    if let image = state.image {
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(height: 200)
-                            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-                            .overlay(
-                                LinearGradient(
-                                    gradient: Gradient(colors: [
-                                        Color.clear,
-                                        Color.black.opacity(0.3)
-                                    ]),
-                                    startPoint: .top,
-                                    endPoint: .bottom
-                                )
-                            )
-                    } else {
-                        // Fallback banner with app icon
-                        fallbackBanner
-                    }
+        VStack {
+            Spacer()
+            
+            // Centered App Icon Only - Positioned Higher
+            LazyImage(url: URL(string: app.iconUrl)) { state in
+                if let image = state.image {
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 120, height: 120)
+                        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                        .shadow(color: Color.black.opacity(0.2), radius: 8, x: 0, y: 4)
+                } else {
+                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                        .fill(Color.gray.opacity(0.1))
+                        .frame(width: 120, height: 120)
+                        .overlay(
+                            Image(systemName: "app.badge.fill")
+                                .font(.system(size: 48))
+                                .foregroundColor(.gray)
+                        )
                 }
-            } else {
-                fallbackBanner
             }
-
-            // Overlay content
-            VStack(alignment: .leading, spacing: 8) {
-                Spacer()
-
-                HStack(spacing: 16) {
-                    // App Icon on banner
-                    LazyImage(url: URL(string: app.iconUrl)) { state in
-                        if let image = state.image {
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(width: 60, height: 60)
-                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                                .shadow(color: Color.black.opacity(0.3), radius: 6, x: 0, y: 3)
-                        } else {
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .fill(Color.white.opacity(0.2))
-                                .frame(width: 60, height: 60)
-                                .overlay(
-                                    Image(systemName: "app.badge.fill")
-                                        .font(.system(size: 24))
-                                        .foregroundColor(.white)
-                                )
-                        }
-                    }
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(app.displayName)
-                            .font(.system(size: 24, weight: .bold, design: .default))
-                            .foregroundColor(.white)
-                            .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
-
-                        if let developer = app.developer {
-                            Text(developer)
-                                .font(.system(size: 16, weight: .medium, design: .default))
-                                .foregroundColor(.white.opacity(0.9))
-                                .shadow(color: Color.black.opacity(0.3), radius: 1, x: 0, y: 1)
-                        }
-                    }
-
-                    Spacer()
-                }
-                .padding(20)
-            }
+            
+            Spacer()
         }
-        .frame(height: 200)
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .shadow(color: Color.black.opacity(0.1), radius: 12, x: 0, y: 6)
+        .frame(height: 160) // Reduced from 200 to bring cards up
+        .frame(maxWidth: .infinity)
     }
 
-    private var fallbackBanner: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            Color.blue.opacity(0.8),
-                            Color.blue.opacity(0.4)
-                        ]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-
-            // Pattern overlay
-            GeometryReader { geometry in
-                Path { path in
-                    let width = geometry.size.width
-                    let height = geometry.size.height
-
-                    for i in 0..<8 {
-                        let x = width * 0.1 * CGFloat(i + 1)
-                        let y = height * 0.2 + (height * 0.05 * CGFloat(i))
-                        path.addEllipse(in: CGRect(x: x - 10, y: y - 10, width: 20, height: 20))
-                    }
-                }
-                .fill(Color.white.opacity(0.1))
-            }
-        }
-    }
 
     
     private func screenshotsSection(_ screenshots: [String]) -> some View {

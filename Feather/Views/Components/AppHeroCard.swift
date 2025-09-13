@@ -15,7 +15,6 @@ struct AppHeroCard: View {
     let app: IOSAppDTO
     let onTap: () -> Void
     
-    @State private var isPressed = false
     @State private var isHovered = false
     @State private var iconLoaded = false
     
@@ -32,23 +31,8 @@ struct AppHeroCard: View {
             .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
             .shadow(color: Color.black.opacity(0.08), radius: 16, x: 0, y: 8)
             .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 3)
-            .scaleEffect(isPressed ? 0.98 : 1.0)
-            .animation(.easeInOut(duration: 0.1), value: isPressed)
         }
         .buttonStyle(PlainButtonStyle())
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in
-                    withAnimation(.easeInOut(duration: 0.1)) {
-                        isPressed = true
-                    }
-                }
-                .onEnded { _ in
-                    withAnimation(.easeInOut(duration: 0.1)) {
-                        isPressed = false
-                    }
-                }
-        )
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.2)) {
                 isHovered = hovering
@@ -71,7 +55,7 @@ struct AppHeroCard: View {
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
-            .frame(height: 200)
+            .frame(height: 140) // Reduced from 200 to make hero banner more compact
             
             // Decorative elements
             GeometryReader { geometry in
@@ -95,9 +79,9 @@ struct AppHeroCard: View {
             
             // Main app icon
             modernAppIcon
-                .frame(width: 120, height: 120)
+                .frame(width: 120, height: 120) // Reduced from 120x120 to make icon more compact
         }
-        .frame(height: 200)
+        .frame(height: 140) // Reduced from 200 to make hero banner more compact
     }
     
     private var modernAppIcon: some View {
@@ -116,12 +100,12 @@ struct AppHeroCard: View {
                     )
                 )
                 .blur(radius: 20)
-                .frame(width: 120, height: 120)
+                .frame(width: 100, height: 100) // Reduced from 120x120 to make icon more compact
             
             // Main icon container
             RoundedRectangle(cornerRadius: 30, style: .continuous)
                 .fill(Color(UIColor.tertiarySystemGroupedBackground))
-                .frame(width: 120, height: 120)
+                .frame(width: 100, height: 100) // Reduced from 120x120 to make icon more compact
                 .overlay(
                     RoundedRectangle(cornerRadius: 30, style: .continuous)
                         .strokeBorder(
@@ -142,7 +126,7 @@ struct AppHeroCard: View {
                     image
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .frame(width: 108, height: 108)
+                        .frame(width: 95, height: 95) // Reduced from 108x108 to match smaller container
                         .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
                         .shadow(color: Color.black.opacity(0.15), radius: 12, x: 0, y: 6)
                         .overlay(
@@ -159,7 +143,7 @@ struct AppHeroCard: View {
                     // Error state with modern styling
                     RoundedRectangle(cornerRadius: 28, style: .continuous)
                         .fill(Color.red.opacity(0.1))
-                        .frame(width: 108, height: 108)
+                        .frame(width: 72, height: 72) // Reduced from 108x108 to match smaller container
                         .overlay(
                             Image(systemName: "exclamationmark.triangle.fill")
                                 .font(.system(size: 36, weight: .medium))
@@ -171,7 +155,7 @@ struct AppHeroCard: View {
                     // Loading state with shimmer effect
                     RoundedRectangle(cornerRadius: 28, style: .continuous)
                         .fill(Color.gray.opacity(0.1))
-                        .frame(width: 108, height: 108)
+                        .frame(width: 72, height: 72) // Reduced from 108x108 to match smaller container
                         .overlay(
                             ProgressView()
                                 .scaleEffect(1.2)
@@ -185,11 +169,11 @@ struct AppHeroCard: View {
     }
     
     private var appInfoSection: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 16) { // Reduced from 20 to make card more compact
             // App name and developer
-            VStack(spacing: 12) {
+            VStack(spacing: 8) { // Reduced from 12 to make card more compact
                 Text(app.displayName)
-                    .font(.system(size: 28, weight: .bold, design: .default))
+                    .font(.system(size: 22, weight: .bold, design: .default)) // Reduced from 28 to make title more compact
                     .foregroundColor(.primary)
                     .lineLimit(2)
                     .multilineTextAlignment(.center)
@@ -197,7 +181,7 @@ struct AppHeroCard: View {
                 
                 if let developer = app.developer, !developer.isEmpty {
                     Text(developer)
-                        .font(.system(size: 18, weight: .medium, design: .default))
+                        .font(.system(size: 14, weight: .medium, design: .default)) // Reduced from 18 to make developer text more compact
                         .foregroundColor(.secondary)
                         .lineLimit(1)
                         .truncationMode(.middle)
@@ -237,7 +221,7 @@ struct AppHeroCard: View {
             // Modern action button
             modernActionButton
         }
-        .padding(32)
+        .padding(20) // Reduced from 32 to make card more compact
         .frame(maxWidth: .infinity)
     }
     

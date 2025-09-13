@@ -68,7 +68,16 @@ struct AppMustHaveCard: View {
                             .lineLimit(1)
                     }
                     
-                    // Rating
+
+                    // Short description
+                    if let shortDesc = app.displayShortDescription {
+                        Text(shortDesc)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .lineLimit(2)
+                    }
+
+                                        // Rating
                     if let rating = app.rating, rating > 0 {
                         HStack(spacing: 2) {
                             ForEach(0..<5) { index in
@@ -82,13 +91,6 @@ struct AppMustHaveCard: View {
                         }
                     }
                     
-                    // Short description
-                    if let shortDesc = app.displayShortDescription {
-                        Text(shortDesc)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .lineLimit(2)
-                    }
                 }
                 
                 Spacer()
