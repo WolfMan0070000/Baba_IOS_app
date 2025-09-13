@@ -12,6 +12,13 @@ import Feather
 struct AppMustHaveCard: View {
     let app: IOSAppDTO
     let onTap: () -> Void
+    let onGetTap: (() -> Void)?
+    
+    init(app: IOSAppDTO, onTap: @escaping () -> Void, onGetTap: (() -> Void)? = nil) {
+        self.app = app
+        self.onTap = onTap
+        self.onGetTap = onGetTap
+    }
     
     var body: some View {
         Button(action: onTap) {
@@ -21,7 +28,7 @@ struct AppMustHaveCard: View {
                     if let image = state.image {
                         image
                             .resizable()
-                            .aspectRatio(contentMode: .fit)
+                            .aspectRatio(1, contentMode: .fit)
                             .frame(width: 60, height: 60)
                             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                             .accessibility(label: Text("\(app.displayName) app icon"))
@@ -31,7 +38,7 @@ struct AppMustHaveCard: View {
                             .fill(Color.red.opacity(0.1))
                             .frame(width: 60, height: 60)
                             .overlay(
-                                Image(systemName: "exclamationmark.triangle")
+                                Image(systemName: "exclamationmark.triangle.fill")
                                     .foregroundColor(.red)
                             )
                             .accessibility(label: Text("Failed to load \(app.displayName) app icon"))
@@ -48,54 +55,58 @@ struct AppMustHaveCard: View {
                 }
                 
                 // App Info
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        Text(app.displayName)
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.primary)
-                            .lineLimit(1)
-                        
-                        Spacer()
-                        
-
-                    }
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(app.displayName)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
                     
-                    if let developer = app.developer {
+                    if let developer = app.developer, !developer.isEmpty {
                         Text(developer)
-                            .font(.caption)
+                            .font(.system(size: 12))
                             .foregroundColor(.secondary)
                             .lineLimit(1)
+                            .truncationMode(.middle)
                     }
                     
-
                     // Short description
                     if let shortDesc = app.displayShortDescription {
                         Text(shortDesc)
-                            .font(.caption)
+                            .font(.system(size: 12))
                             .foregroundColor(.secondary)
                             .lineLimit(2)
                     }
-
-                                        // Rating
+                    
+                    // Rating
                     if let rating = app.rating, rating > 0 {
                         HStack(spacing: 2) {
                             ForEach(0..<5) { index in
                                 Image(systemName: index < Int(rating.rounded()) ? "star.fill" : "star")
-                                    .font(.caption2)
-                                    .foregroundColor(.yellow)
+                                    .font(.system(size: 10))
+                                    .foregroundColor(index < Int(rating.rounded()) ? .orange : .gray.opacity(0.3))
                             }
                             Text("\(rating, specifier: "%.1f")")
-                                .font(.caption2)
+                                .font(.system(size: 11, weight: .medium))
                                 .foregroundColor(.secondary)
                         }
                     }
-                    
                 }
                 
                 Spacer()
+                
+                // GET button
+                Button(action: { onGetTap?() }) {
+                    Text("GET")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(.blue)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 6)
+                        .background(Color.blue.opacity(0.1))
+                        .clipShape(Capsule())
+                }
             }
-            .padding(.vertical, 8)
+            .padding(.vertical, 10)
             .padding(.horizontal, 12)
         }
         .buttonStyle(PlainButtonStyle())

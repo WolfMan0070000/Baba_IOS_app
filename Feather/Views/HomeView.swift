@@ -9,6 +9,7 @@
 import SwiftUI
 import NimbleViews
 import NukeUI
+import Feather
 
 // MARK: - Section Apps Data Model
 struct SectionAppsData: Identifiable {
@@ -52,6 +53,7 @@ struct HomeView: View {
                 }
                 .navigationTitle(String(localized: "Home"))
                 .navigationBarTitleDisplayMode(.large)
+                .navigationBarHidden(true)
                 
                 // Hidden NavigationLink for programmatic navigation
                 NavigationLink(
@@ -230,7 +232,8 @@ struct HomeView: View {
     
     private var mainContentView: some View {
         ScrollView {
-            VStack(spacing: 32) {
+            VStack(spacing: 28) {
+                // Removed Discover header per request
                 // Process only the configured sections from admin panel
                 let enabledSections = sections.filter { $0.enabled }
                 let sortedSections = enabledSections.sorted { $0.order < $1.order }
@@ -251,13 +254,17 @@ struct HomeView: View {
                             // Regular app sections with configured apps
                             AppSectionView(section: section, appsById: appsById, onAppTap: { app in
                                 selectedApp = app
-                            }, onSectionTap: showSectionApps)
+                            }, onSectionTap: showSectionApps, onGetTap: { app in
+                                startDownload(app: app)
+                            })
                             
                         default:
                             // Handle any other section types as regular app sections
                             AppSectionView(section: section, appsById: appsById, onAppTap: { app in
                                 selectedApp = app
-                            }, onSectionTap: showSectionApps)
+                            }, onSectionTap: showSectionApps, onGetTap: { app in
+                                startDownload(app: app)
+                            })
                         }
                     }
                     .id(section.id) // Add ID for better SwiftUI diffing
@@ -523,6 +530,14 @@ struct HomeView: View {
                     }
                 }
             }
+        }
+    }
+    
+    // MARK: - Downloads
+    private func startDownload(app: IOSAppDTO) {
+        if let ipaUrl = app.ipaUrl, let url = URL(string: ipaUrl) {
+            let downloadId = "BabaApp_\(app.bundleIdentifier)_\(app.id)"
+            _ = DownloadManager.shared.startDownload(from: url, id: downloadId)
         }
     }
     
@@ -1036,6 +1051,7 @@ private struct AppSectionView: View {
     let appsById: [String: IOSAppDTO]
     let onAppTap: (IOSAppDTO) -> Void
     let onSectionTap: (String, [IOSAppDTO]) -> Void
+    let onGetTap: (IOSAppDTO) -> Void
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -1088,14 +1104,16 @@ private struct AppSectionView: View {
                         AutoSwapSectionContent(
                             section: section,
                             apps: apps,
-                            onAppTap: onAppTap
+                            onAppTap: onAppTap,
+                            onGetTap: onGetTap
                         )
                     } else {
                         // Use regular static content
                         StaticSectionContent(
                             section: section,
                             apps: apps,
-                            onAppTap: onAppTap
+                            onAppTap: onAppTap,
+                            onGetTap: onGetTap
                         )
                     }
                 } else {
@@ -1115,6 +1133,7 @@ private struct AutoSwapSectionContent: View {
     let section: HomepageSectionDTO
     let apps: [IOSAppDTO]
     let onAppTap: (IOSAppDTO) -> Void
+    let onGetTap: (IOSAppDTO) -> Void
     
     @State private var currentPage = 0
     @State private var timer: Timer?
@@ -1149,6 +1168,11 @@ private struct AutoSwapSectionContent: View {
     }
     
     var body: some View {
+        sectionContent
+    }
+    
+    @ViewBuilder
+    private var sectionContent: some View {
         VStack(spacing: 8) {
             // Use the same approach as StaticSectionContent but with manual page control
             switch section.type {
@@ -1162,9 +1186,11 @@ private struct AutoSwapSectionContent: View {
                             VStack(spacing: 0) {
                                 ForEach(0..<appsChunks[chunkIndex].count, id: \.self) { appIndex in
                                     let app = appsChunks[chunkIndex][appIndex]
-                                    AppMustHaveCard(app: app) {
-                                        onAppTap(app)
-                                    }
+                                    AppMustHaveCard(
+                                        app: app,
+                                        onTap: { onAppTap(app) },
+                                        onGetTap: { onGetTap(app) }
+                                    )
                                     
                                     // Divider line between apps (except for last item in chunk)
                                     if appIndex < appsChunks[chunkIndex].count - 1 {
@@ -1224,15 +1250,17 @@ private struct AutoSwapSectionContent: View {
                         ForEach(0..<appsChunks.count, id: \.self) { chunkIndex in
                             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: 3), spacing: 16) {
                                 ForEach(appsChunks[chunkIndex], id: \.id) { app in
-                                    AppGridCard(app: app) {
-                                        onAppTap(app)
-                                    }
+                                    AppGridCard(
+                                        app: app,
+                                        onTap: { onAppTap(app) },
+                                        onGetTap: { onGetTap(app) }
+                                    )
                                 }
                                 
                                 // Add spacer to fill remaining space if less than 6 apps
                                 if appsChunks[chunkIndex].count < 6 {
                                     ForEach(0..<(6 - appsChunks[chunkIndex].count)) { _ in
-                                        Color.clear.frame(height: 100)
+                                        Color.clear.frame(height: 350)
                                     }
                                 }
                             }
@@ -1263,9 +1291,11 @@ private struct AutoSwapSectionContent: View {
                         ForEach(0..<appsChunks.count, id: \.self) { chunkIndex in
                             HStack(spacing: 16) {
                                 ForEach(Array(appsChunks[chunkIndex].enumerated()), id: \.element.id) { _, app in
-                                    AppBannerCard(app: app) {
-                                        onAppTap(app)
-                                    }
+                                    AppBannerCard(
+                                        app: app,
+                                        onTap: { onAppTap(app) },
+                                        onGetTap: { onGetTap(app) }
+                                    )
                                 }
                                 
                                 // Fill empty spaces if less than 3 apps
@@ -1312,9 +1342,11 @@ private struct AutoSwapSectionContent: View {
                         ForEach(0..<appsChunks.count, id: \.self) { chunkIndex in
                             VStack(spacing: 16) {
                                 ForEach(Array(appsChunks[chunkIndex].enumerated()), id: \.element.id) { _, app in
-                                    AppHeroCard(app: app) {
-                                        onAppTap(app)
-                                    }
+                                    AppHeroCard(
+                                        app: app,
+                                        onTap: { onAppTap(app) },
+                                        onGetTap: { onGetTap(app) }
+                                    )
                                 }
                                 
                                 // Add spacer to fill remaining space if less than 2 apps
@@ -1370,6 +1402,8 @@ private struct AutoSwapSectionContent: View {
                                 ForEach(Array(appsChunks[chunkIndex].enumerated()), id: \.element.id) { _, app in
                                     AppListCard(app: app) {
                                         onAppTap(app)
+                                    } onGetTap: {
+                                        onGetTap(app)
                                     }
                                 }
                                 
@@ -1473,6 +1507,7 @@ private struct StaticSectionContent: View {
     let section: HomepageSectionDTO
     let apps: [IOSAppDTO]
     let onAppTap: (IOSAppDTO) -> Void
+    let onGetTap: (IOSAppDTO) -> Void
     
     var body: some View {
         switch section.type {
@@ -1480,9 +1515,11 @@ private struct StaticSectionContent: View {
             // Grid layout (3 columns)
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: 3), spacing: 16) {
                 ForEach(apps, id: \.id) { app in
-                    AppGridCard(app: app) {
-                        onAppTap(app)
-                    }
+                    AppGridCard(
+                        app: app,
+                        onTap: { onAppTap(app) },
+                        onGetTap: { onGetTap(app) }
+                    )
                 }
             }
             .padding(.horizontal, 10)
@@ -1492,12 +1529,14 @@ private struct StaticSectionContent: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 16) {
                     ForEach(apps, id: \.id) { app in
-                        AppBannerCard(app: app) {
-                            onAppTap(app)
-                        }
+                        AppBannerCard(
+                            app: app,
+                            onTap: { onAppTap(app) },
+                            onGetTap: { onGetTap(app) }
+                        )
                     }
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, 4)
             }
             
         case "hero":
@@ -1520,9 +1559,11 @@ private struct StaticSectionContent: View {
                         VStack(spacing: 16) {
                             ForEach(0..<heroAppsChunks[chunkIndex].count, id: \.self) { appIndex in
                                 let app = heroAppsChunks[chunkIndex][appIndex]
-                                AppHeroCard(app: app) {
-                                    onAppTap(app)
-                                }
+                                AppHeroCard(
+                                    app: app,
+                                    onTap: { onAppTap(app) },
+                                    onGetTap: { onGetTap(app) }
+                                )
                             }
                             
                             // Add spacer to fill remaining space if less than 2 apps
@@ -1566,9 +1607,11 @@ private struct StaticSectionContent: View {
                         VStack(spacing: 0) {
                             ForEach(0..<appsChunks[chunkIndex].count, id: \.self) { appIndex in
                                 let app = appsChunks[chunkIndex][appIndex]
-                                AppMustHaveCard(app: app) {
-                                    onAppTap(app)
-                                }
+                                AppMustHaveCard(
+                                    app: app,
+                                    onTap: { onAppTap(app) },
+                                    onGetTap: { onGetTap(app) }
+                                )
                                 
                                 // Divider line between apps (except for last item in chunk)
                                 if appIndex < appsChunks[chunkIndex].count - 1 {
@@ -1613,9 +1656,11 @@ private struct StaticSectionContent: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 16) {
                     ForEach(apps, id: \.id) { app in
-                        AppListCard(app: app) {
-                            onAppTap(app)
-                        }
+                        AppListCard(
+                            app: app,
+                            onTap: { onAppTap(app) },
+                            onGetTap: { onGetTap(app) }
+                        )
                     }
                 }
                 .padding(.horizontal, 20)
@@ -1626,9 +1671,11 @@ private struct StaticSectionContent: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 16) {
                     ForEach(apps, id: \.id) { app in
-                        AppListCard(app: app) {
-                            onAppTap(app)
-                        }
+                        AppListCard(
+                            app: app,
+                            onTap: { onAppTap(app) },
+                            onGetTap: { onGetTap(app) }
+                        )
                     }
                 }
                 .padding(.horizontal, 20)

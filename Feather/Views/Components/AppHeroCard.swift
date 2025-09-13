@@ -14,9 +14,16 @@ import Feather
 struct AppHeroCard: View {
     let app: IOSAppDTO
     let onTap: () -> Void
+    let onGetTap: (() -> Void)?
     
     @State private var isHovered = false
     @State private var iconLoaded = false
+    
+    init(app: IOSAppDTO, onTap: @escaping () -> Void, onGetTap: (() -> Void)? = nil) {
+        self.app = app
+        self.onTap = onTap
+        self.onGetTap = onGetTap
+    }
     
     var body: some View {
         Button(action: onTap) {
@@ -219,7 +226,9 @@ struct AppHeroCard: View {
             }
             
             // Modern action button
-            modernActionButton
+            Button(action: { onGetTap?() }) {
+                modernActionButton
+            }
         }
         .padding(20) // Reduced from 32 to make card more compact
         .frame(maxWidth: .infinity)
@@ -327,7 +336,8 @@ struct AppHeroCard: View {
                 updatedAt: nil,
                 reviews: nil
             ),
-            onTap: {}
+            onTap: {},
+            onGetTap: nil
         )
         .frame(width: 400)
         
@@ -364,7 +374,8 @@ struct AppHeroCard: View {
                 updatedAt: nil,
                 reviews: nil
             ),
-            onTap: {}
+            onTap: {},
+            onGetTap: nil
         )
         .frame(width: 400)
     }

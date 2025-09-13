@@ -103,51 +103,47 @@ struct AppDetailView: View {
     
     // MARK: - Apple-style Background
     private var appleStyleBackground: some View {
-        ZStack {
-            // Base gradient background
-            LinearGradient(
-                gradient: Gradient(colors: [
-                    Color(UIColor.systemBackground),
-                    Color(UIColor.secondarySystemGroupedBackground).opacity(0.9)
-                ]),
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
-
-            // Subtle pattern overlay
-            GeometryReader { geometry in
-                Path { path in
-                    let width = geometry.size.width
-                    let height = geometry.size.height
-
-                    // Create subtle circular patterns
-                    for i in 0..<6 {
-                        let centerX = width * 0.15 + (width * 0.2 * CGFloat(i))
-                        let centerY = height * 0.25 + (height * 0.15 * CGFloat(i))
-                        let radius = min(width, height) * 0.1
-
-                        path.addArc(
-                            center: CGPoint(x: centerX, y: centerY),
-                            radius: radius,
-                            startAngle: .zero,
-                            endAngle: .degrees(360),
-                            clockwise: false
+        GeometryReader { geometry in
+            ZStack {
+                // Blurred app icon as background
+                LazyImage(url: URL(string: app.iconUrl)) { state in
+                    if let image = state.image {
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: geometry.size.width, height: geometry.size.height)
+                            .clipped()
+                            .blur(radius: 50)
+                            .saturation(1.05)
+                            .opacity(0.95)
+                    } else {
+                        // Fallback gradient while loading or on error
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                Color(UIColor.systemBackground),
+                                Color(UIColor.secondarySystemGroupedBackground).opacity(0.9)
+                            ]),
+                            startPoint: .top,
+                            endPoint: .bottom
                         )
                     }
                 }
-                .fill(
-                    RadialGradient(
-                        gradient: Gradient(colors: [
-                            Color.blue.opacity(0.02),
-                            Color.clear
-                        ]),
-                        center: .center,
-                        startRadius: 0,
-                        endRadius: min(geometry.size.width, geometry.size.height) * 0.1
+                
+                // Readability/material overlay (prevents banding and keeps content legible)
+                Rectangle()
+                    .fill(
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                Color(UIColor.systemBackground).opacity(0.72),
+                                Color(UIColor.systemBackground).opacity(0.82)
+                            ]),
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
                     )
-                )
+                    .background(.ultraThinMaterial)
             }
+            .ignoresSafeArea()
         }
     }
 
@@ -218,7 +214,7 @@ struct AppDetailView: View {
             
             Spacer()
         }
-        .frame(height: 160) // Reduced from 200 to bring cards up
+        .frame(height: 150) // Slightly tighter
         .frame(maxWidth: .infinity)
     }
 
@@ -306,7 +302,7 @@ struct AppDetailView: View {
                 .padding(.vertical, 8)
             }
         }
-        .padding(20)
+        .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .fill(Color(UIColor.secondarySystemGroupedBackground))
@@ -369,7 +365,7 @@ struct AppDetailView: View {
                 .padding(.top, 8)
             }
         }
-        .padding(20)
+        .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .fill(Color(UIColor.secondarySystemGroupedBackground))
@@ -542,7 +538,7 @@ struct AppDetailView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
         }
-        .padding(20)
+        .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .fill(Color(UIColor.secondarySystemGroupedBackground))
@@ -653,7 +649,7 @@ struct AppDetailView: View {
                         .frame(width: 120)
                     }
                 }
-                .padding(20)
+                .padding(16)
                 .background(Color(UIColor.tertiarySystemGroupedBackground))
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             }
@@ -676,7 +672,7 @@ struct AppDetailView: View {
 
                     Spacer()
                 }
-                .padding(20)
+                .padding(16)
                 .background(Color(UIColor.tertiarySystemGroupedBackground))
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             } else if reviews.isEmpty {
@@ -743,7 +739,7 @@ struct AppDetailView: View {
                         }
                     }
                 }
-                .padding(24)
+                .padding(16)
                 .background(Color(UIColor.tertiarySystemGroupedBackground))
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             } else {
@@ -840,7 +836,7 @@ struct AppDetailView: View {
                 }
             }
         }
-        .padding(20)
+        .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .fill(Color(UIColor.secondarySystemGroupedBackground))
@@ -956,13 +952,13 @@ struct AppDetailView: View {
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.white.opacity(0.8))
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, 16)
                 }
             }
             .disabled(isDownloadDisabled)
             .opacity(isDownloadDisabled ? 0.6 : 1.0)
-            .padding(.horizontal, 20)
-            .padding(.bottom, 40)
+            .padding(.horizontal, 16)
+            .padding(.bottom, 28)
             .opacity(downloadButtonOpacity)
             .scaleEffect(downloadButtonScale)
             .onAppear {
