@@ -58,17 +58,7 @@ struct AppMustHaveCard: View {
                         
                         Spacer()
                         
-                        // "Must Have" badge
-                        Text("MUST HAVE")
-                            .font(.caption2)
-                            .fontWeight(.bold)
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(
-                                Capsule()
-                                    .fill(Color.orange)
-                            )
+
                     }
                     
                     if let developer = app.developer {

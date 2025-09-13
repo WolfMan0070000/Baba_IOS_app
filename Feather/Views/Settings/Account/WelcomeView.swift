@@ -22,79 +22,36 @@ struct WelcomeView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                // Apple-style background (matching LoginView)
+                // Simplified background
                 LinearGradient(
                     gradient: Gradient(colors: [
                         Color(UIColor.systemBackground),
-                        Color(UIColor.secondarySystemGroupedBackground).opacity(0.8)
+                        Color(UIColor.secondarySystemBackground).opacity(0.8)
                     ]),
                     startPoint: .top,
                     endPoint: .bottom
                 )
                 .ignoresSafeArea()
 
-                // Subtle pattern overlay
-                GeometryReader { geometry in
-                    Path { path in
-                        let width = geometry.size.width
-                        let height = geometry.size.height
-
-                        // Create subtle circular patterns
-                        for i in 0..<4 {
-                            let centerX = width * 0.3 + (width * 0.2 * CGFloat(i))
-                            let centerY = height * 0.4 + (height * 0.15 * CGFloat(i))
-                            let radius = min(width, height) * 0.12
-
-                            path.addArc(
-                                center: CGPoint(x: centerX, y: centerY),
-                                radius: radius,
-                                startAngle: .zero,
-                                endAngle: .degrees(360),
-                                clockwise: false
-                            )
-                        }
-                    }
-                    .fill(
-                        RadialGradient(
-                            gradient: Gradient(colors: [
-                                Color.blue.opacity(0.02),
-                                Color.clear
-                            ]),
-                            center: .center,
-                            startRadius: 0,
-                            endRadius: min(geometry.size.width, geometry.size.height) * 0.12
-                        )
-                    )
-                }
-
                 ScrollView {
-                    VStack(spacing: 40) {
+                    VStack(spacing: 24) {
                         Spacer(minLength: 80)
 
-                        // Logo section with Apple-style animation
-                        VStack(spacing: 32) {
+                        // Logo section with simplified animation
+                        VStack(spacing: 24) {
+                            // Simple logo representation
                             ZStack {
-                                // Outer glow
                                 Circle()
-                                    .fill(Color.blue.opacity(0.08))
-                                    .frame(width: 140, height: 140)
-                                    .blur(radius: 25)
-                                    .scaleEffect(logoScale)
-
-                                // Main logo background
-                                Circle()
-                                    .fill(Color(UIColor.tertiarySystemGroupedBackground))
-                                    .frame(width: 120, height: 120)
-                                    .shadow(color: Color.black.opacity(0.08), radius: 12, x: 0, y: 6)
-
-                                // App logo
-                                Image(systemName: "app.badge.fill")
-                                    .font(.system(size: 50, weight: .medium))
-                                    .foregroundColor(.blue)
+                                    .fill(Color.blue)
+                                    .frame(width: 100, height: 100)
+                                
+                                Image(systemName: "bird.fill")
+                                    .font(.system(size: 40))
+                                    .foregroundColor(.white)
                             }
                             .scaleEffect(logoScale)
                             .onAppear {
-                                withAnimation(.easeOut(duration: 0.8).delay(0.2)) {
+                                withAnimation(.easeOut(duration: 0.5).delay(0.2)) {
                                     logoScale = 1.0
                                 }
                             }
@@ -102,7 +59,7 @@ struct WelcomeView: View {
                             // Welcome text with animation
                             VStack(spacing: 16) {
                                 Text("Welcome to Feather")
-                                    .font(.system(size: 34, weight: .bold, design: .default))
+                                    .font(.system(size: 32, weight: .bold, design: .default))
                                     .foregroundColor(.primary)
                                     .multilineTextAlignment(.center)
 
@@ -117,7 +74,7 @@ struct WelcomeView: View {
                         .opacity(textOpacity)
                         .offset(y: textOffset)
                         .onAppear {
-                            withAnimation(.easeOut(duration: 0.6).delay(0.4)) {
+                            withAnimation(.easeOut(duration: 0.4).delay(0.3)) {
                                 textOpacity = 1.0
                                 textOffset = 0
                             }
@@ -125,23 +82,22 @@ struct WelcomeView: View {
 
                         Spacer(minLength: 60)
 
-                        // Action buttons with Apple-style design
-                        VStack(spacing: 16) {
+                        // Action buttons with simplified design
+                        VStack(spacing: 20) {
                             Button(action: {
-                                withAnimation(.easeInOut(duration: 0.2)) {
+                                withAnimation(.easeInOut(duration: 0.3)) {
                                     showLoginView = true
                                 }
                             }) {
-                                ZStack {
-                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                        .fill(Color.blue)
-                                        .frame(height: 56)
-                                        .shadow(color: Color.blue.opacity(0.3), radius: 8, x: 0, y: 4)
-
-                                    Text("Sign In")
-                                        .font(.system(size: 17, weight: .semibold, design: .default))
-                                        .foregroundColor(.white)
-                                }
+                                Text("Sign In")
+                                    .font(.system(size: 17, weight: .semibold))
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 16)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .fill(Color.blue)
+                                    )
+                                    .foregroundColor(.white)
                             }
                             .accessibilityLabel("Sign In button")
                             .accessibilityHint("Double tap to sign in to your account")
@@ -151,20 +107,19 @@ struct WelcomeView: View {
                                     UserDefaults.standard.set(true, forKey: "Feather.hasSeenWelcome")
                                 }
                             }) {
-                                ZStack {
-                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                        .fill(Color(UIColor.secondarySystemGroupedBackground))
-                                        .frame(height: 56)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                                .strokeBorder(Color.blue.opacity(0.3), lineWidth: 1)
-                                        )
-                                        .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 3)
-
-                                    Text("Skip for Now")
-                                        .font(.system(size: 17, weight: .medium, design: .default))
-                                        .foregroundColor(.blue)
-                                }
+                                Text("Skip for Now")
+                                    .font(.system(size: 17, weight: .semibold))
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 16)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .fill(Color(UIColor.secondarySystemBackground))
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 16)
+                                                    .strokeBorder(Color.blue.opacity(0.3), lineWidth: 1)
+                                            )
+                                    )
+                                    .foregroundColor(.blue)
                             }
                             .accessibilityLabel("Skip sign in button")
                             .accessibilityHint("Double tap to skip sign in and continue as guest")
@@ -173,7 +128,7 @@ struct WelcomeView: View {
                         .opacity(buttonOpacity)
                         .offset(y: buttonOffset)
                         .onAppear {
-                            withAnimation(.easeOut(duration: 0.6).delay(0.8)) {
+                            withAnimation(.easeOut(duration: 0.4).delay(0.5)) {
                                 buttonOpacity = 1.0
                                 buttonOffset = 0
                             }
@@ -181,6 +136,8 @@ struct WelcomeView: View {
 
                         Spacer(minLength: 40)
                     }
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 24)
                 }
             }
             .navigationBarHidden(true)
